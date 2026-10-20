@@ -1,0 +1,211 @@
+/* ===== Login / account screens (simulated) + Dashboard ===== */
+const Auth = {};
+const authCard = (
+  title,
+  sub,
+  body,
+) => `<div class="auth"><div class="card"><div class="text-center mb-3"><i class="bi bi-cart3 fs-1" style="color:var(--blue)"></i><div class="fw-bold" style="color:var(--blue-dark)">Sta. Monica of Bustos</div><small class="muted">Multipurpose Cooperative · Sales and Inventory</small></div>
+ <h1 class="h4 text-center">${title}</h1><p class="muted text-center">${sub}</p>${body}<div class="sim-note mt-3"><i class="bi bi-info-circle"></i> Simulated prototype. No real login, email, or OTP is used.</div></div></div>`;
+const pw = (id, label) =>
+  `<div class="col-12"><label class="form-label" for="${id}">${label} <span class="req">*</span></label><div class="input-group"><input class="form-control" id="${id}" type="password" autocomplete="off"><button class="btn btn-outline-secondary" type="button" data-act="showpw" data-a="${id}" aria-label="Show or hide password"><i class="bi bi-eye"></i></button><div class="invalid-feedback" id="e-${id}"></div></div></div>`;
+A.showpw = (id) => {
+  const i = $("#" + id);
+  i.type = i.type === "password" ? "text" : "password";
+};
+Auth.login = () =>
+  authCard(
+    "Log in",
+    "Enter your username and password.",
+    `<form data-form="doLogin" novalidate class="row g-3"><div class="col-12"><label class="form-label" for="lu">Username <span class="req">*</span></label><input class="form-control" id="lu" autocomplete="off"><div class="invalid-feedback" id="e-lu"></div></div>${pw("lp", "Password")}
+ <div id="lerr" class="col-12 text-danger small" role="alert"></div><div class="col-12"><button class="btn btn-primary w-100">Log in</button></div>
+ <div class="col-12 d-flex justify-content-between"><a href="#/forgot">Forgot password?</a><a href="#/signup">Create account</a></div></form>
+ <hr><div class="small-muted mb-2">Demo accounts (password: <b>demo1234</b>) — pick a role to preview role-based menus:</div>
+ <div class="d-grid gap-2">${S.users
+   .filter((u) => u.active)
+   .map(
+     (u) =>
+       `<button class="btn btn-outline-primary btn-sm" data-act="fill" data-a="${u.username}">${u.role}: ${u.name}</button>`,
+   )
+   .join("")}</div>`,
+  );
+A.fill = (u) => {
+  $("#lu").value = u;
+  $("#lp").value = "demo1234";
+};
+A.doLogin = () => {
+  clearErr();
+  $("#lerr").textContent = "";
+  const u = val("lu"),
+    p = $("#lp").value;
+  if (
+    !check("lu", u, "Please enter your username.") |
+    !check("lp", p, "Please enter your password.")
+  )
+    return;
+  const x = S.users.find((x) => x.username === u.toLowerCase());
+  if (!x || p !== "demo1234") {
+    $("#lerr").textContent = "Incorrect username or password. Try again.";
+    return;
+  }
+  if (!x.active) {
+    $("#lerr").textContent = x.pending
+      ? "Your account is waiting for manager approval."
+      : "This account is inactive. Please contact the manager.";
+    return;
+  }
+  S.user = x;
+  location.hash = "#/dashboard";
+  toast(`Welcome back, ${x.name.split(" ")[0]}!`);
+};
+Auth.signup = () =>
+  authCard(
+    "Create account",
+    "Your request will be reviewed by the manager.",
+    `<form data-form="doSignup" novalidate class="row g-3">${fld("sn", "Full name", { col: "col-12" })}${fld("su", "Username", { col: "col-12" })}${fld("se", "Email", { type: "email", col: "col-12" })}${fld(
+      "sr",
+      "Role requested",
+      {
+        col: "col-12",
+        opts: [
+          ["", "Select role"],
+          ["Inventory Clerk", "Inventory Clerk"],
+          ["Cashier", "Cashier"],
+        ],
+      },
+    )}${pw("sp", "Password")}${pw("sp2", "Confirm password")}
+ <div class="col-12"><button class="btn btn-primary w-100">Submit request</button></div><div class="col-12 text-center"><a href="#/login">Back to log in</a></div></form>`,
+  );
+A.doSignup = () => {
+  clearErr();
+  const u = val("su").toLowerCase(),
+    p = $("#sp").value;
+  const ok = [
+    check("sn", val("sn"), "Enter your full name."),
+    check(
+      "su",
+      /^[a-z0-9_.]{4,}$/.test(u) && !S.users.some((x) => x.username === u),
+      /^[a-z0-9_.]{4,}$/.test(u)
+        ? "That username is already taken."
+        : "Use 4 or more letters or numbers.",
+    ),
+    check("se", /^\S+@\S+\.\S+$/.test(val("se")), "Enter a valid email."),
+    check("sr", val("sr"), "Select a role."),
+    check(
+      "sp",
+      p.length >= 8 && /\d/.test(p),
+      "Use at least 8 characters with a number.",
+    ),
+    check("sp2", $("#sp2").value === p, "Passwords do not match."),
+  ];
+  if (ok.includes(false)) return;
+  S.users.push({
+    id: S.n.user++,
+    name: val("sn"),
+    username: u,
+    role: val("sr"),
+    active: false,
+    pending: true,
+  });
+  location.hash = "#/login";
+  toast("Request sent. Wait for manager approval before logging in.", "info");
+};
+Auth.forgot = () =>
+  authCard(
+    "Forgot password",
+    "Enter your username or email to get a verification code.",
+    `<form data-form="doForgot" novalidate class="row g-3">${fld("fu", "Username or email", { col: "col-12" })}<div class="col-12"><button class="btn btn-primary w-100">Send code</button></div><div class="col-12 text-center"><a href="#/login">Back to log in</a></div></form>`,
+  );
+A.doForgot = () => {
+  clearErr();
+  if (!check("fu", val("fu"), "Enter your username or email.")) return;
+  S.reset = {};
+  location.hash = "#/otp";
+  toast("Code sent (simulated).", "info");
+};
+Auth.otp = () =>
+  authCard(
+    "Enter verification code",
+    "A 6-digit code was “sent” to you.",
+    `<div class="alert alert-info py-2">Demo code: <b>123456</b></div><form data-form="doOtp" novalidate class="row g-3">${fld("oc", "6-digit code", { col: "col-12", attrs: 'inputmode="numeric" maxlength="6"' })}<div class="col-12"><button class="btn btn-primary w-100">Verify</button></div><div class="col-12 d-flex justify-content-between"><button type="button" class="btn btn-link p-0" data-act="resend">Resend code</button><a href="#/login">Cancel</a></div></form>`,
+  );
+A.resend = () => toast("A new code was sent (simulated).", "info");
+A.doOtp = () => {
+  clearErr();
+  if (
+    !check(
+      "oc",
+      val("oc") === "123456",
+      "Incorrect code. Use the demo code 123456.",
+    )
+  )
+    return;
+  location.hash = "#/reset";
+};
+Auth.reset = () =>
+  authCard(
+    "Set new password",
+    "Choose a new password.",
+    `<form data-form="doReset" novalidate class="row g-3">${pw("np", "New password")}${pw("np2", "Confirm new password")}<div class="col-12"><button class="btn btn-primary w-100">Save password</button></div></form>`,
+  );
+A.doReset = () => {
+  clearErr();
+  const p = $("#np").value;
+  if (
+    !check(
+      "np",
+      p.length >= 8 && /\d/.test(p),
+      "Use at least 8 characters with a number.",
+    ) | !check("np2", $("#np2").value === p, "Passwords do not match.")
+  )
+    return;
+  location.hash = "#/login";
+  toast("Password changed (simulated). You can log in now.");
+};
+
+/* ---- Dashboard ---- */
+V.dashboard = () => {
+  const ps = S.products.filter((p) => p.active),
+    al = alerts(),
+    today = S.sales.filter((s) => s.dt.startsWith(off(0))),
+    amt = today.reduce((s, x) => s + x.total, 0);
+  const card = (href, icon, n, l, cls = "") =>
+    `<div class="col-6 col-md-4 col-xxl-2"><a class="stat ${cls}" href="#/${href}"><i class="bi bi-${icon}"></i><div><b>${n}</b><small>${l}</small></div></a></div>`;
+  const K = S.user.role === "Cashier";
+  return (
+    pageHead("Dashboard", `Welcome back, ${esc(S.user.name.split(" ")[0])}!`) +
+    `<div class="row g-3 mb-4">
+ ${card("products", "box-seam", ps.length, "Active products")}${card("inventory?show=low", "exclamation-triangle", al.low, "Low stock", "low")}${card("inventory?show=out", "x-octagon", al.out, "Out of stock", "low")}
+ ${K ? "" : card("expiration?show=soon", "hourglass-split", al.soon, "Expiring soon", "soon") + card("expiration?show=expired", "x-circle", al.exp, "Expired batches", "low")}${card("pos?tab=history", "cash-coin", peso(amt), `Today's sales (${today.length})`)}</div>
+ <div class="row g-3"><div class="col-lg-6"><div class="card"><div class="card-h">Recent Sales<a href="#/pos?tab=history" class="small">View all</a></div>${tbl(
+   ["Ref", "Date", "Total"],
+   S.sales
+     .slice(0, 4)
+     .map(
+       (s) =>
+         `<tr><td>${s.ref}</td><td>${dtfmt(s.dt)}</td><td>${peso(s.total)}</td></tr>`,
+     ),
+ )}</div></div>
+ ${
+   K
+     ? ""
+     : `<div class="col-lg-6"><div class="card"><div class="card-h">Recent Deliveries<a href="#/deliveries" class="small">View all</a></div>${tbl(
+         ["Ref", "Date", "Supplier", "Items"],
+         S.deliveries
+           .slice(0, 4)
+           .map(
+             (d) =>
+               `<tr><td>${d.ref}</td><td>${dfmt(d.date)}</td><td>${esc(supOf(d.sup).name)}</td><td>${d.lines.length}</td></tr>`,
+           ),
+       )}</div></div>
+ <div class="col-12"><div class="card"><div class="card-h">Recent Activity<a href="#/movements" class="small">All stock movements</a></div>${tbl(
+   ["When", "Product", "Type", "Qty"],
+   S.movements
+     .slice(0, 6)
+     .map(
+       (m) =>
+         `<tr><td>${dtfmt(m.dt)}</td><td>${esc(prod(m.pid).name)}</td><td>${m.type}</td><td>${m.qty > 0 ? "+" : ""}${m.qty}</td></tr>`,
+     ),
+ )}</div></div>`
+ }</div>`
+  );
+};
