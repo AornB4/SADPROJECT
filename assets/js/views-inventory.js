@@ -65,7 +65,7 @@ RES.inv = () => {
         (!f.cat || p.cat == f.cat) &&
         showMatch(p, f.show),
     );
-  return `<div class="card">${tbl(
+  return `${actionLegend(["view"])}<div class="card">${tbl(
     [
       "Product",
       "Category",
@@ -76,7 +76,7 @@ RES.inv = () => {
     ],
     sl(L, "inv").map(
       (p) =>
-        `<tr><td><b>${esc(p.name)}</b><div class="small-muted">${p.code}</div></td><td>${esc(catName(p.cat))}</td><td>${stockPill(p)}</td><td>${p.min}</td><td>${expCell(p)}</td><td><button class="btn btn-outline-primary btn-sm" data-act="view" data-a="${p.id}"><i class="bi bi-eye"></i> View</button></td></tr>`,
+        `<tr><td><b>${esc(p.name)}</b><div class="small-muted">${p.code}</div></td><td>${esc(catName(p.cat))}</td><td>${stockPill(p)}</td><td>${p.min}</td><td>${expCell(p)}</td><td><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button></td></tr>`,
     ),
     "No products match your search.",
   )}${pager("inv", L.length)}</div>`;
@@ -100,11 +100,11 @@ RES.prod = () => {
     m ? ["Cost"] : [],
     ["Price", "In stock", "Min. stock", "Actions"],
   );
-  return `<div class="card">${tbl(
+  return `${actionLegend(["view", ...(m ? ["edit", "status"] : [])])}<div class="card">${tbl(
     heads,
     L.map(
       (p) =>
-        `<tr><td>${p.code}</td><td><b>${esc(p.name)}</b><div class="small-muted">${p.unit}</div>${p.active ? "" : activePill(0)}</td><td>${esc(catName(p.cat))}</td><td>${p.type}</td>${m ? `<td>${peso(p.cost)}</td>` : ""}<td>${peso(p.price)}</td><td>${stockPill(p)}</td><td>${p.min}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button>${m ? ` <button class="btn btn-outline-primary btn-sm" data-act="prodForm" data-a="${p.id}" aria-label="Edit ${esc(p.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-outline-secondary btn-sm" data-act="prodToggle" data-a="${p.id}" aria-label="${p.active ? "Deactivate" : "Reactivate"} ${esc(p.name)}"><i class="bi bi-${p.active ? "archive" : "arrow-counterclockwise"}"></i></button>` : ""}</td></tr>`,
+        `<tr><td>${p.code}</td><td><b>${esc(p.name)}</b><div class="small-muted">${p.unit}</div>${p.active ? "" : activePill(0)}</td><td>${esc(catName(p.cat))}</td><td>${p.type}</td>${m ? `<td>${peso(p.cost)}</td>` : ""}<td>${peso(p.price)}</td><td>${stockPill(p)}</td><td>${p.min}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button>${m ? ` <button class="btn btn-sm table-action action-edit" data-act="prodForm" data-a="${p.id}" aria-label="Edit ${esc(p.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="prodToggle" data-a="${p.id}" aria-label="${p.active ? "Deactivate" : "Reactivate"} ${esc(p.name)}"><i class="bi bi-arrow-repeat"></i></button>` : ""}</td></tr>`,
     ),
     "No products found.",
   )}<div class="small-muted p-3">${L.length} products</div></div>`;
@@ -257,7 +257,7 @@ RES.exp = () => {
         (!s || expState(b.exp) === s),
     )
     .sort((a, b) => a.exp.localeCompare(b.exp));
-  return `<div class="card">${tbl(
+  return `${actionLegend(["view", ...(hasOp("spoilage") ? ["spoilage"] : [])])}<div class="card">${tbl(
     [
       "Product",
       "Batch",
@@ -270,7 +270,7 @@ RES.exp = () => {
     ],
     L.map((b) => {
       const p = prod(b.pid);
-      return `<tr><td><b>${esc(p.name)}</b></td><td>${b.ref}</td><td>${b.qty}</td><td>${dfmt(b.arr)}</td><td>${dfmt(b.exp)}</td><td>${expBadge(b.exp)}</td><td>${b.sup ? esc(supOf(b.sup).name) : "—"}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="view" data-a="${p.id}">View</button> ${hasOp("spoilage") ? `<button class="btn btn-outline-secondary btn-sm" data-act="spoilForm" data-a="Spoilage" data-b="${b.id}">Record spoilage</button>` : ""}</td></tr>`;
+      return `<tr><td><b>${esc(p.name)}</b></td><td>${b.ref}</td><td>${b.qty}</td><td>${dfmt(b.arr)}</td><td>${dfmt(b.exp)}</td><td>${expBadge(b.exp)}</td><td>${b.sup ? esc(supOf(b.sup).name) : "—"}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button> ${hasOp("spoilage") ? `<button class="btn btn-sm table-action action-record" data-act="spoilForm" data-a="Spoilage" data-b="${b.id}" aria-label="Record spoilage for ${esc(p.name)}"><i class="bi bi-exclamation-triangle"></i></button>` : ""}</td></tr>`;
     }),
     "No products near expiration.",
   )}</div>`;
@@ -296,11 +296,11 @@ V.deliveries = () =>
     "Record stock received from suppliers.",
     `<button class="btn btn-primary" data-act="newDel"><i class="bi bi-plus-lg"></i> New Delivery</button>`,
   ) +
-  `<div class="card">${tbl(
+  `${actionLegend(["view"])}<div class="card">${tbl(
     ["Reference", "Date", "Supplier", "Items", "Total cost", "Action"],
     S.deliveries.map(
       (d) =>
-        `<tr><td><b>${d.ref}</b></td><td>${dfmt(d.date)}</td><td>${esc(supOf(d.sup).name)}</td><td>${d.lines.length}</td><td>${peso(d.lines.reduce((s, l) => s + l.qty * l.cost, 0))}</td><td><button class="btn btn-outline-primary btn-sm" data-act="delView" data-a="${d.ref}">View</button></td></tr>`,
+        `<tr><td><b>${d.ref}</b></td><td>${dfmt(d.date)}</td><td>${esc(supOf(d.sup).name)}</td><td>${d.lines.length}</td><td>${peso(d.lines.reduce((s, l) => s + l.qty * l.cost, 0))}</td><td><button class="btn btn-sm table-action action-view" data-act="delView" data-a="${d.ref}" aria-label="View delivery ${d.ref}"><i class="bi bi-eye"></i></button></td></tr>`,
     ),
   )}</div>`;
 A.delView = (ref) => {

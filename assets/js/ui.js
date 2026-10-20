@@ -3,6 +3,22 @@ const $ = (s, r = document) => r.querySelector(s),
   $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const brandLogo = (className) =>
   `<img class="${className}" src="assets/images/cooperative-logo.png" alt="Sta. Monica of Bustos cooperative logo">`;
+const actionLegendItems = {
+  edit: ["pencil-square", "Edit", "action-edit"],
+  view: ["eye", "View", "action-view"],
+  status: ["arrow-repeat", "Deactivate / Reactivate", "action-status"],
+  spoilage: ["exclamation-triangle", "Record spoilage", "action-record"],
+};
+const actionLegendOrder = ["edit", "status", "view", "spoilage"];
+const actionLegend = (actions) =>
+  `<div class="action-legend" aria-label="Legend: table actions"><strong class="action-legend-title">LEGEND</strong>${actions
+    .slice()
+    .sort((a, b) => actionLegendOrder.indexOf(a) - actionLegendOrder.indexOf(b))
+    .map((action) => {
+      const [i, text, cls] = actionLegendItems[action];
+      return `<span class="action-legend-item"><i class="bi bi-${i} ${cls}" aria-hidden="true"></i>${text}</span>`;
+    })
+    .join("")}</div>`;
 const esc = (s) =>
   String(s ?? "").replace(
     /[&<>"']/g,

@@ -290,6 +290,63 @@ body.sb-collapsed .sb-user .uinfo {
   align-items: center;
   gap: 0.5rem;
 }
+.action-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 1rem;
+  margin-bottom: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f0f4f8;
+  color: #475569;
+  font-size: 0.8rem;
+}
+.action-legend-title {
+  color: var(--blue-dark);
+}
+.action-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+.action-legend-item i {
+  font-size: 0.9rem;
+  color: var(--action-color);
+}
+.table-action {
+  color: var(--action-color);
+  border-color: var(--action-color);
+  background: var(--action-bg);
+}
+.table-action:hover,
+.table-action:focus-visible {
+  color: var(--action-color);
+  border-color: var(--action-color);
+  background: var(--action-hover);
+}
+.action-edit {
+  --action-color: #f59e0b;
+  --action-bg: #fffaf0;
+  --action-hover: #fef0c7;
+}
+.action-view {
+  --action-color: #2563a6;
+  --action-bg: #f5f9ff;
+  --action-hover: #e1edfb;
+}
+.action-status {
+  --action-color: #475569;
+  --action-bg: #f8fafc;
+  --action-hover: #e9eef4;
+}
+.action-record {
+  --action-color: #c2410c;
+  --action-bg: #fff7ed;
+  --action-hover: #ffedd5;
+}
 .stat {
   display: flex;
   gap: 0.9rem;

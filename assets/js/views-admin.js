@@ -7,11 +7,13 @@ RES.sup = () => {
         has(s.name + s.contact, f.q) &&
         (f.status === "all" || (f.status === "active") === s.active),
     );
-  return `<div class="card">${tbl(
+  return `${actionLegend(
+    isMgr() ? ["view", "edit", "status"] : ["view"],
+  )}<div class="card">${tbl(
     ["Supplier", "Contact person", "Phone", "Status", "Actions"],
     L.map(
       (s) =>
-        `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact)}</td><td>${esc(s.phone)}</td><td>${activePill(s.active)}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="supView" data-a="${s.id}">View</button> <button class="btn btn-outline-primary btn-sm" data-act="supForm" data-a="${s.id}" aria-label="Edit ${esc(s.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-outline-secondary btn-sm" data-act="supToggle" data-a="${s.id}">${s.active ? "Deactivate" : "Reactivate"}</button></td></tr>`,
+        `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact)}</td><td>${esc(s.phone)}</td><td>${activePill(s.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="supView" data-a="${s.id}" aria-label="View ${esc(s.name)}"><i class="bi bi-eye"></i></button>${isMgr() ? ` <button class="btn btn-sm table-action action-edit" data-act="supForm" data-a="${s.id}" aria-label="Edit ${esc(s.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="supToggle" data-a="${s.id}" aria-label="${s.active ? "Deactivate" : "Reactivate"} ${esc(s.name)}"><i class="bi bi-arrow-repeat"></i></button>` : ""}</td></tr>`,
     ),
     "No suppliers found.",
   )}</div>`;
@@ -124,11 +126,11 @@ RES.cat = () => {
         has(c.name, f.q) &&
         (f.status === "all" || (f.status === "active") === c.active),
     );
-  return `<div class="card">${tbl(
+  return `${actionLegend(["edit", "status"])}<div class="card">${tbl(
     ["Category", "Products", "Status", "Actions"],
     L.map(
       (c) =>
-        `<tr><td><b>${esc(c.name)}</b></td><td>${S.products.filter((p) => p.cat === c.id && p.active).length}</td><td>${activePill(c.active)}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="catForm" data-a="${c.id}" aria-label="Edit ${esc(c.name)}"><i class="bi bi-pencil-square"></i> Edit</button> <button class="btn btn-outline-secondary btn-sm" data-act="catToggle" data-a="${c.id}">${c.active ? "Deactivate" : "Reactivate"}</button></td></tr>`,
+        `<tr><td><b>${esc(c.name)}</b></td><td>${S.products.filter((p) => p.cat === c.id && p.active).length}</td><td>${activePill(c.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-edit" data-act="catForm" data-a="${c.id}" aria-label="Edit ${esc(c.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="catToggle" data-a="${c.id}" aria-label="${c.active ? "Deactivate" : "Reactivate"} ${esc(c.name)}"><i class="bi bi-arrow-repeat"></i></button></td></tr>`,
     ),
     "No categories found.",
   )}</div>`;

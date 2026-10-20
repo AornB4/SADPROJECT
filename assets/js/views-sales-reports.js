@@ -77,11 +77,11 @@ V.pos = () => {
         isMgr() ? "Completed sales (sample data)." : "Your completed sales.",
       ) +
       tabs +
-      `<div class="card">${tbl(
+      `${actionLegend(["view"])}<div class="card">${tbl(
         ["Reference", "Date & time", "Items", "Total", "Cashier", "Receipt"],
         mySales().map(
           (s) =>
-            `<tr><td><b>${s.ref}</b></td><td>${dtfmt(s.dt)}</td><td>${s.lines.reduce((n, l) => n + l.qty, 0)}</td><td>${peso(s.total)}</td><td>${esc(s.user)}</td><td><button class="btn btn-outline-primary btn-sm" data-act="rcpt" data-a="${s.ref}">View</button></td></tr>`,
+            `<tr><td><b>${s.ref}</b></td><td>${dtfmt(s.dt)}</td><td>${s.lines.reduce((n, l) => n + l.qty, 0)}</td><td>${peso(s.total)}</td><td>${esc(s.user)}</td><td><button class="btn btn-sm table-action action-view" data-act="rcpt" data-a="${s.ref}"><i class="bi bi-eye"></i> View</button></td></tr>`,
         ),
       )}</div>`
     );
