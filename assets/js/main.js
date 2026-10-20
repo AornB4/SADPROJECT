@@ -108,7 +108,7 @@ Object.keys(DEF).forEach((k) => {
   F[k] = { ...DEF[k] };
   P[k] = 1;
 });
-const AUTH = ["login", "forgot", "otp", "reset"];
+const AUTH = ["login"];
 let ROUTE = "";
 const allowed = (r) => {
   const rule = ROUTE_RULE[r];

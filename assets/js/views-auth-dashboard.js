@@ -5,7 +5,7 @@ const authCard = (
   sub,
   body,
 ) => `<div class="auth"><div class="card"><div class="text-center mb-3">${brandLogo("brand-logo auth-brand-logo")}<div class="fw-bold" style="color:var(--blue-dark)">Sta. Monica of Bustos</div><small class="muted">Multipurpose Cooperative · Sales and Inventory</small></div>
- <h1 class="h4 text-center">${title}</h1><p class="muted text-center">${sub}</p>${body}<div class="sim-note mt-3"><i class="bi bi-info-circle"></i> Simulated prototype. No real login, email, or OTP is used.</div></div></div>`;
+ <h1 class="h4 text-center">${title}</h1><p class="muted text-center">${sub}</p>${body}<div class="sim-note mt-3"><i class="bi bi-info-circle"></i> Simulated prototype. No real login or email is used.</div></div></div>`;
 const pw = (id, label) =>
   `<div class="col-12"><label class="form-label" for="${id}">${label} <span class="req">*</span></label><div class="input-group"><input class="form-control" id="${id}" type="password" autocomplete="off"><button class="btn btn-outline-secondary" type="button" data-act="showpw" data-a="${id}" aria-label="Show or hide password"><i class="bi bi-eye"></i></button><div class="invalid-feedback" id="e-${id}"></div></div></div>`;
 A.showpw = (id) => {
@@ -18,7 +18,7 @@ Auth.login = () =>
     "Enter your username and password.",
     `<form data-form="doLogin" novalidate class="row g-3"><div class="col-12"><label class="form-label" for="lu">Username <span class="req">*</span></label><input class="form-control" id="lu" autocomplete="off"><div class="invalid-feedback" id="e-lu"></div></div>${pw("lp", "Password")}
  <div id="lerr" class="col-12 text-danger small" role="alert"></div><div class="col-12"><button class="btn btn-primary w-100">Log in</button></div>
- <div class="col-12"><a href="#/forgot">Forgot password?</a></div></form>`,
+</form>`,
   );
 A.doLogin = () => {
   clearErr();
@@ -45,64 +45,6 @@ A.doLogin = () => {
   location.hash = "#/dashboard";
   toast(`Welcome back, ${x.name.split(" ")[0]}!`);
 };
-Auth.forgot = () =>
-  authCard(
-    "Forgot password",
-    "Enter your username or email to get a verification code.",
-    `<form data-form="doForgot" novalidate class="row g-3">${fld("fu", "Username or email", { col: "col-12" })}<div class="col-12"><button class="btn btn-primary w-100">Send code</button></div><div class="col-12 text-center"><a href="#/login">Back to log in</a></div></form>`,
-  );
-A.doForgot = () => {
-  clearErr();
-  if (!check("fu", val("fu"), "Enter your username or email.")) return;
-  S.reset = { u: val("fu").toLowerCase() };
-  location.hash = "#/otp";
-  toast("Code sent (simulated).", "info");
-};
-Auth.otp = () =>
-  authCard(
-    "Enter verification code",
-    "A 6-digit code was “sent” to you.",
-    `<div class="alert alert-info py-2">Demo code: <b>123456</b></div><form data-form="doOtp" novalidate class="row g-3">${fld("oc", "6-digit code", { col: "col-12", attrs: 'inputmode="numeric" maxlength="6"' })}<div class="col-12"><button class="btn btn-primary w-100">Verify</button></div><div class="col-12 d-flex justify-content-between"><button type="button" class="btn btn-link p-0" data-act="resend">Resend code</button><a href="#/login">Cancel</a></div></form>`,
-  );
-A.resend = () => toast("A new code was sent (simulated).", "info");
-A.doOtp = () => {
-  clearErr();
-  if (
-    !check(
-      "oc",
-      val("oc") === "123456",
-      "Incorrect code. Use the demo code 123456.",
-    )
-  )
-    return;
-  location.hash = "#/reset";
-};
-Auth.reset = () =>
-  authCard(
-    "Set new password",
-    "Choose a new password.",
-    `<form data-form="doReset" novalidate class="row g-3">${pw("np", "New password")}${pw("np2", "Confirm new password")}<div class="col-12"><button class="btn btn-primary w-100">Save password</button></div></form>`,
-  );
-A.doReset = () => {
-  clearErr();
-  const p = $("#np").value;
-  if (
-    !check(
-      "np",
-      p.length >= 8 && /\d/.test(p),
-      "Use at least 8 characters with a number.",
-    ) | !check("np2", $("#np2").value === p, "Passwords do not match.")
-  )
-    return;
-  const ru = S.users.find((x) => x.username === (S.reset || {}).u);
-  if (ru) {
-    ru.pw = p;
-    logAudit("Account", "Password reset using verification code", ru.name);
-  }
-  location.hash = "#/login";
-  toast("Password changed (simulated). You can log in now.");
-};
-
 /* ---- Dashboard ---- */
 V.dashboard = () => {
   const ps = S.products.filter((p) => p.active),

@@ -22,7 +22,9 @@ If you cannot finish the remaining work, provide the latest complete source file
 ## Requirements checklist
 Sources: Ch.1 scope (product/stock monitoring, perishable/non-perishable, low-stock alerts, stock movement log, batch/arrival/expiry dates, suppliers & deliveries with quantities and costs, daily sales auto-updating stock, reports: inventory status, stock movements, sales logs, near-expiry list; roles: manager, inventory clerk, cashier; excludes accounting, e-commerce, payment gateways) and instructor notes (login/logout/forgot password/sign-up, OTP, no hardcoding → table-driven categories with CRUD, deletion keeps records, reports = anything printed: summary + list).
 
-- [x] Login, sign-up (pending approval), forgot password, OTP, reset, logout confirm (simulated)
+Deviation from the instructor notes: the "forgot password / OTP" item was deliberately **removed** on request — a frontend-only prototype has no mail service, so no code or link could be delivered. Password changes remain available through the Manager-only User Accounts screen and the user's own My Account screen.
+
+- [x] Login, logout confirm (simulated). **Forgot-password / OTP / reset flow removed** — the prototype has no mail service, so nothing could be sent to the user; passwords are still changed by a Manager (Administration › User Accounts) and by the signed-in user (My Account).
 - [x] Dashboard with clickable cards (low, out, expiring, expired, today's sales), recent sales/deliveries/activity
 - [x] Products: search, category/type/status filters, add/edit/view, deactivate (records kept), validation
 - [x] Categories CRUD (no hardcoded dropdown; Product form reads `S.cats`)

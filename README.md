@@ -1,11 +1,11 @@
 # Sta. Monica of Bustos MPC — Sales and Inventory Management System (UI Prototype)
 
-Frontend-only, interactive prototype (HTML5, CSS3, JavaScript, Bootstrap 5, Bootstrap Icons). **No backend, no database, no PHP, no real login/OTP/email.** All data is fictional and lives in browser memory; reloading the page resets it.
+Frontend-only, interactive prototype (HTML5, CSS3, JavaScript, Bootstrap 5, Bootstrap Icons). **No backend, no database, no PHP, no real login or email.** All data is fictional and lives in browser memory; reloading the page resets it.
 
 ## Run
 1. Unzip, then open `index.html` in a browser (internet needed once for the Bootstrap CDN files), or run `python3 -m http.server` in this folder and open http://localhost:8000.
-2. Log in with a demo account (password `demo1234`): `msantos` (Manager), `jdelacruz` (Inventory Clerk), `areyes` (Cashier). The login page has one-click buttons. Menus change per role.
-3. Demo OTP code for Forgot Password: `123456`.
+2. Log in with a demo account (password `demo1234`): `msantos` (Manager), `jdelacruz` (Inventory Clerk), `areyes` (Cashier). Menus change per role.
+3. There is no "forgot password" flow: the prototype has no mail service, so no reset link or code could ever be sent. Passwords are still changed by a Manager under Administration › User Accounts, and by the signed-in user under Settings › My Account.
 
 ## Structure (single-page app, hash routing — avoids duplicated layouts)
 - `index.html` – page shell, modal, side panel, toasts, notification center
