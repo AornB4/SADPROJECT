@@ -1,21 +1,24 @@
 /* ===== Router, shell (sidebar/header), global event handling ===== */
-const RC = { Manager: "M", "Inventory Clerk": "C", Cashier: "K" };
-const ACCESS = {
-  dashboard: "MCK",
-  products: "MC",
-  inventory: "MCK",
-  deliveries: "MC",
-  "delivery-new": "MC",
-  expiration: "MC",
-  spoilage: "MC",
-  movements: "MC",
-  pos: "MK",
-  receipt: "MK",
-  suppliers: "MC",
-  reports: "MC",
-  categories: "MC",
-  settings: "M",
-  account: "MCK",
+/* Page access: "all" = any signed-in user, "mgr" = Manager only,
+   otherwise an inventory operation a Manager can assign to an Employee. */
+const ROUTE_RULE = {
+  dashboard: "all",
+  products: "all",
+  inventory: "all",
+  expiration: "all",
+  movements: "all",
+  pos: "all",
+  receipt: "all",
+  account: "all",
+  deliveries: "deliveries",
+  "delivery-new": "deliveries",
+  spoilage: "spoilage",
+  suppliers: "mgr",
+  reports: "mgr",
+  categories: "mgr",
+  settings: "mgr",
+  users: "mgr",
+  audit: "mgr",
 };
 const NAV = [
   ["dashboard", "Dashboard", "speedometer2"],
@@ -35,6 +38,15 @@ const NAV = [
   ["pos", "Sales / POS", "cart3"],
   ["suppliers", "Suppliers", "truck"],
   ["reports", "Reports", "file-earmark-bar-graph"],
+  {
+    key: "adm",
+    label: "Administration",
+    icon: "shield-check",
+    kids: [
+      ["users", "User Accounts"],
+      ["audit", "Audit Logs"],
+    ],
+  },
   {
     key: "set",
     label: "Settings",
@@ -56,6 +68,8 @@ const RK = {
   expiration: "exp",
   spoilage: "spo",
   reports: "rep",
+  users: "usr",
+  audit: "aud",
 };
 Object.assign(DEF, {
   inv: { q: "", cat: "", show: "" },
@@ -67,6 +81,8 @@ Object.assign(DEF, {
   exp: { show: "" },
   spo: { kind: "" },
   rep: { type: "inventory", from: off(-30), to: off(0), cat: "", q: "" },
+  usr: { q: "", role: "", status: "active" },
+  aud: { from: "", to: "", user: "", type: "", q: "" },
 });
 Object.keys(DEF).forEach((k) => {
   F[k] = { ...DEF[k] };
@@ -74,7 +90,13 @@ Object.keys(DEF).forEach((k) => {
 });
 const AUTH = ["login", "forgot", "otp", "reset"];
 let ROUTE = "";
-const allowed = (r) => S.user && (ACCESS[r] || "").includes(RC[S.user.role]);
+const allowed = (r) => {
+  const rule = ROUTE_RULE[r];
+  if (!S.user || !rule) return false;
+  if (rule === "all") return true;
+  if (rule === "mgr") return isMgr();
+  return hasOp(rule);
+};
 const navItems = () =>
   NAV.map((n) =>
     n.kids
@@ -111,6 +133,8 @@ const TITLES = {
   categories: "Categories",
   settings: "Alert Settings",
   account: "My Account",
+  users: "User Accounts",
+  audit: "Audit Logs",
 };
 const alerts = () => {
   const ps = S.products.filter((p) => p.active);
@@ -145,7 +169,7 @@ function shell() {
    .slice(0, 2)
    .join(
      "",
-   )}</span><span class="uinfo"><b class="d-block">${esc(u.name)}</b><small>${u.role}</small></span></button>
+   )}</span><span class="uinfo"><b class="d-block">${esc(u.name)}</b><small>${ROLE_LABEL[u.role]}</small></span></button>
  <ul class="dropdown-menu"><li><a class="dropdown-item" href="#/account">My Account</a></li><li><button class="dropdown-item" data-act="logout">Log out</button></li></ul></div></aside>
  <div class="sb-backdrop" data-act="drawer"></div>
  <div class="main"><header class="topbar no-print"><button class="btn btn-outline-secondary" data-act="drawer" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
@@ -182,7 +206,7 @@ function render() {
     ? '<div class="alert alert-warning">Page not found.</div>'
     : allowed(r.name)
       ? V[r.name](r)
-      : `<div class="card p-4 text-center"><i class="bi bi-shield-lock fs-1"></i><h1>No access</h1><p>Your role (${S.user.role}) cannot open this page in the prototype.</p><a class="btn btn-primary mx-auto" href="#/dashboard">Back to Dashboard</a></div>`;
+      : `<div class="card p-4 text-center"><i class="bi bi-shield-lock fs-1"></i><h1>No access</h1><p>Your account (${ROLE_LABEL[S.user.role]}) is not allowed to open this page.</p><a class="btn btn-primary mx-auto" href="#/dashboard">Back to Dashboard</a></div>`;
   payUpd();
   window.scrollTo(0, 0);
 }
@@ -250,6 +274,7 @@ A.logout = () =>
     "Log out?",
     "Are you sure you want to log out?",
     () => {
+      logAudit("Logout", "Logged out");
       S.user = null;
       S.cart = [];
       S.tender = "";

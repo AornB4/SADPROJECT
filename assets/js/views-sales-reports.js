@@ -58,11 +58,14 @@ V.pos = () => {
   const tabs = `<div class="mb-3 border-bottom no-print"><button class="tab-btn ${t === "sale" ? "on" : ""}" data-act="tab" data-a="sale">New Sale</button><button class="tab-btn ${t === "history" ? "on" : ""}" data-act="tab" data-a="history">Sales History</button></div>`;
   if (t === "history")
     return (
-      pageHead("Sales / POS", "Completed sales (sample data).") +
+      pageHead(
+        "Sales / POS",
+        isMgr() ? "Completed sales (sample data)." : "Your completed sales.",
+      ) +
       tabs +
       `<div class="card">${tbl(
         ["Reference", "Date & time", "Items", "Total", "Cashier", "Receipt"],
-        S.sales.map(
+        mySales().map(
           (s) =>
             `<tr><td><b>${s.ref}</b></td><td>${dtfmt(s.dt)}</td><td>${s.lines.reduce((n, l) => n + l.qty, 0)}</td><td>${peso(s.total)}</td><td>${esc(s.user)}</td><td><button class="btn btn-outline-primary btn-sm" data-act="rcpt" data-a="${s.ref}">View</button></td></tr>`,
         ),
@@ -132,6 +135,7 @@ A.checkout = () => {
         tendered: +S.tender,
         user: S.user.name,
       });
+      logAudit("Sale", `${ref}: ${lines.length} item(s), total ${peso(t)}`);
       S.cart = [];
       S.tender = "";
       location.hash = "#/receipt/" + ref;
@@ -150,7 +154,8 @@ A.rcpt = (ref) =>
   });
 V.receipt = (r) => {
   const s = S.sales.find((x) => x.ref === r.arg);
-  if (!s) return '<div class="alert alert-warning">Sale not found.</div>';
+  if (!s || (!isMgr() && s.user !== S.user.name))
+    return '<div class="alert alert-warning">Sale not found.</div>';
   return `<div class="text-center mb-3 no-print"><i class="bi bi-check-circle-fill fs-1" style="color:var(--green)"></i><h1>Sale completed</h1><div class="muted">Simulated sale ${s.ref}. Stock on screen has been updated.</div></div>${receiptHtml(s)}
  <div class="d-flex justify-content-center gap-2 mt-3 no-print flex-wrap"><button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print Receipt</button><a class="btn btn-outline-primary" href="#/pos">New Sale</a><a class="btn btn-outline-secondary" href="#/pos?tab=history">Sales History</a></div>`;
 };
@@ -432,7 +437,7 @@ V.reports = () =>
   pageHead(
     "Reports",
     "Choose a report, set filters, then print.",
-    `<button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print Report</button>`,
+    `<button class="btn btn-primary" data-act="printRep"><i class="bi bi-printer"></i> Print Report</button>`,
   ) +
   `<div class="d-flex flex-wrap gap-2 mb-3 no-print">${Object.entries(REPORTS)
     .map(
@@ -444,4 +449,9 @@ V.reports = () =>
 A.repType = (t) => {
   F.rep.type = t;
   refresh();
+};
+A.printRep = () => {
+  if (!guard(isMgr())) return;
+  logAudit("Report", `Printed ${REPORTS[F.rep.type]} report`);
+  window.print();
 };

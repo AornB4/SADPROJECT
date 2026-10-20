@@ -1,7 +1,7 @@
 /* ===== Products, Inventory, Deliveries, Expiration, Spoilage/Returns, Movements ===== */
 const sl = (L, k) => L.slice((P[k] - 1) * PER, P[k] * PER);
 const has = (s, q) => !q || s.toLowerCase().includes(q.toLowerCase());
-const canEdit = () => S.user.role !== "Cashier";
+const canEdit = () => isMgr();
 /* ---- Product details panel (closed by default) ---- */
 A.view = (pid) => {
   const p = prod(pid),
@@ -15,7 +15,7 @@ A.view = (pid) => {
         ["Category", esc(catName(p.cat))],
         ["Type", p.type],
         ["Unit", p.unit],
-        ["Purchase cost", peso(p.cost)],
+        ...(isMgr() ? [["Purchase cost", peso(p.cost)]] : []),
         ["Selling price", peso(p.price)],
         ["Status", activePill(p.active)],
       ]) +
@@ -87,27 +87,24 @@ V.inventory = () =>
 /* ---- Products ---- */
 RES.prod = () => {
   const f = F.prod,
+    m = isMgr(),
+    st = m ? f.status : "active",
     L = S.products.filter(
       (p) =>
         has(p.name + p.code, f.q) &&
         (!f.cat || p.cat == f.cat) &&
         (!f.type || p.type === f.type) &&
-        (f.status === "all" || (f.status === "active") === p.active),
+        (st === "all" || (st === "active") === p.active),
     );
+  const heads = ["Code", "Product", "Category", "Type"].concat(
+    m ? ["Cost"] : [],
+    ["Price", "In stock", "Min. stock", "Actions"],
+  );
   return `<div class="card">${tbl(
-    [
-      "Code",
-      "Product",
-      "Category",
-      "Type",
-      "Cost",
-      "Price",
-      "Min. stock",
-      "Actions",
-    ],
+    heads,
     L.map(
       (p) =>
-        `<tr><td>${p.code}</td><td><b>${esc(p.name)}</b><div class="small-muted">${p.unit}</div>${p.active ? "" : activePill(0)}</td><td>${esc(catName(p.cat))}</td><td>${p.type}</td><td>${peso(p.cost)}</td><td>${peso(p.price)}</td><td>${p.min}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button> <button class="btn btn-outline-primary btn-sm" data-act="prodForm" data-a="${p.id}" aria-label="Edit ${esc(p.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-outline-secondary btn-sm" data-act="prodToggle" data-a="${p.id}" aria-label="${p.active ? "Deactivate" : "Reactivate"} ${esc(p.name)}"><i class="bi bi-${p.active ? "archive" : "arrow-counterclockwise"}"></i></button></td></tr>`,
+        `<tr><td>${p.code}</td><td><b>${esc(p.name)}</b><div class="small-muted">${p.unit}</div>${p.active ? "" : activePill(0)}</td><td>${esc(catName(p.cat))}</td><td>${p.type}</td>${m ? `<td>${peso(p.cost)}</td>` : ""}<td>${peso(p.price)}</td><td>${stockPill(p)}</td><td>${p.min}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button>${m ? ` <button class="btn btn-outline-primary btn-sm" data-act="prodForm" data-a="${p.id}" aria-label="Edit ${esc(p.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-outline-secondary btn-sm" data-act="prodToggle" data-a="${p.id}" aria-label="${p.active ? "Deactivate" : "Reactivate"} ${esc(p.name)}"><i class="bi bi-${p.active ? "archive" : "arrow-counterclockwise"}"></i></button>` : ""}</td></tr>`,
     ),
     "No products found.",
   )}<div class="small-muted p-3">${L.length} products</div></div>`;
@@ -115,8 +112,12 @@ RES.prod = () => {
 V.products = () =>
   pageHead(
     "Products",
-    "Manage product information.",
-    `<button class="btn btn-primary" data-act="prodForm"><i class="bi bi-plus-lg"></i> Add Product</button>`,
+    isMgr()
+      ? "Manage product information."
+      : "View product prices and stock availability.",
+    isMgr()
+      ? `<button class="btn btn-primary" data-act="prodForm"><i class="bi bi-plus-lg"></i> Add Product</button>`
+      : "",
   ) +
   `<div class="row g-2 mb-3"><div class="col-md-4">${searchBox("prod.q", "Search name or code")}</div><div class="col-md-3">${selF("prod.cat", catOpts(true), "Category")}</div><div class="col-md-3">${selF(
     "prod.type",
@@ -126,16 +127,21 @@ V.products = () =>
       ["Non-Perishable", "Non-Perishable"],
     ],
     "Type",
-  )}</div><div class="col-md-2">${selF(
-    "prod.status",
-    [
-      ["active", "Active"],
-      ["inactive", "Inactive"],
-      ["all", "All"],
-    ],
-    "Status",
-  )}</div></div><div id="res">${RES.prod()}</div>`;
+  )}</div>${
+    isMgr()
+      ? `<div class="col-md-2">${selF(
+          "prod.status",
+          [
+            ["active", "Active"],
+            ["inactive", "Inactive"],
+            ["all", "All"],
+          ],
+          "Status",
+        )}</div>`
+      : ""
+  }</div><div id="res">${RES.prod()}</div>`;
 A.prodForm = (id) => {
+  if (!guard(isMgr())) return;
   const p = id
     ? prod(id)
     : {
@@ -204,12 +210,17 @@ A.prodForm = (id) => {
       };
       if (id) Object.assign(prod(id), d);
       else S.products.push({ id: S.n.prod++, active: true, ...d });
+      logAudit(
+        "Product",
+        `${id ? "Edited" : "Added"} product ${d.code} – ${d.name} (price ${peso(d.price)}, cost ${peso(d.cost)})`,
+      );
       toast(id ? "Product updated." : "Product added.");
       refresh();
     },
   });
 };
 A.prodToggle = (id) => {
+  if (!guard(isMgr())) return;
   const p = prod(id);
   confirmBox(
     p.active ? "Deactivate product?" : "Reactivate product?",
@@ -218,6 +229,10 @@ A.prodToggle = (id) => {
       : `“${esc(p.name)}” will be available again.`,
     () => {
       p.active = !p.active;
+      logAudit(
+        "Product",
+        `${p.active ? "Reactivated" : "Deactivated"} product ${p.code} – ${p.name}`,
+      );
       toast(
         p.active
           ? "Product reactivated."
@@ -254,7 +269,7 @@ RES.exp = () => {
     ],
     L.map((b) => {
       const p = prod(b.pid);
-      return `<tr><td><b>${esc(p.name)}</b></td><td>${b.ref}</td><td>${b.qty}</td><td>${dfmt(b.arr)}</td><td>${dfmt(b.exp)}</td><td>${expBadge(b.exp)}</td><td>${b.sup ? esc(supOf(b.sup).name) : "—"}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="view" data-a="${p.id}">View</button> <button class="btn btn-outline-secondary btn-sm" data-act="spoilForm" data-a="Spoilage" data-b="${b.id}">Record spoilage</button></td></tr>`;
+      return `<tr><td><b>${esc(p.name)}</b></td><td>${b.ref}</td><td>${b.qty}</td><td>${dfmt(b.arr)}</td><td>${dfmt(b.exp)}</td><td>${expBadge(b.exp)}</td><td>${b.sup ? esc(supOf(b.sup).name) : "—"}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="view" data-a="${p.id}">View</button> ${hasOp("spoilage") ? `<button class="btn btn-outline-secondary btn-sm" data-act="spoilForm" data-a="Spoilage" data-b="${b.id}">Record spoilage</button>` : ""}</td></tr>`;
     }),
     "No products near expiration.",
   )}</div>`;
@@ -306,6 +321,7 @@ A.delView = (ref) => {
   );
 };
 A.newDel = () => {
+  if (!guard(hasOp("deliveries"))) return;
   S.dl = null;
   location.hash = "#/delivery-new";
 };
@@ -365,6 +381,7 @@ A.delLineRm = (i) => {
   dlTotal();
 };
 A.delSave = () => {
+  if (!guard(hasOp("deliveries"))) return;
   const d = S.dl,
     er = [];
   if (!d.sup) er.push("Select a supplier.");
@@ -410,6 +427,10 @@ A.delSave = () => {
         prod(l.pid).cost = +l.cost;
         logMove(+l.pid, "Delivery", +l.qty, ref, "Stock received");
       });
+      logAudit(
+        "Delivery",
+        `Saved delivery ${ref} from ${supOf(d.sup).name}: ${d.lines.length} item(s), ${peso(dlSum())}`,
+      );
       S.dl = null;
       location.hash = "#/deliveries";
       toast(`Delivery ${ref} saved. Stock updated (simulated).`);
@@ -456,6 +477,7 @@ V.spoilage = () =>
     "Type",
   )}</div></div><div id="res">${RES.spo()}</div>`;
 A.spoilForm = (kind, batchId) => {
+  if (!guard(hasOp("spoilage"))) return;
   const b = batchId ? S.batches.find((x) => x.id == batchId) : null,
     R = kind === "Return",
     reasons = R
@@ -547,6 +569,10 @@ A.spoilForm = (kind, batchId) => {
         bt ? (bt.qty += q) : addBatch(pid, q, null, null);
         logMove(pid, "Return", q, val("sp_s"), "Returned to stock");
       } else logMove(pid, "Return", 0, val("sp_s"), `Returned item — ${disp}`);
+      logAudit(
+        "Stock",
+        `${kind} ${id}: ${prod(pid).name} ×${q} (${val("sp_r")}, ${disp})`,
+      );
       toast("Record saved. Stock updated (simulated).");
       refresh();
     },
@@ -586,10 +612,13 @@ V.movements = () =>
   pageHead(
     "Stock Movements",
     "History of stock coming in and going out.",
-    `<button class="btn btn-primary" data-act="adjForm"><i class="bi bi-plus-slash-minus"></i> Record Adjustment</button>`,
+    hasOp("adjust")
+      ? `<button class="btn btn-primary" data-act="adjForm"><i class="bi bi-plus-slash-minus"></i> Record Adjustment</button>`
+      : "",
   ) +
   `<div class="row g-2 mb-3"><div class="col-6 col-md-2"><label class="small-muted" for="mf">From</label><input id="mf" type="date" class="form-control" data-f="mov.from" value="${F.mov.from}"></div><div class="col-6 col-md-2"><label class="small-muted" for="mt">To</label><input id="mt" type="date" class="form-control" data-f="mov.to" value="${F.mov.to}"></div><div class="col-md-4"><label class="small-muted">Product</label>${selF("mov.pid", [["", "All products"]].concat(S.products.map((p) => [p.id, p.name])), "Product")}</div><div class="col-md-4"><label class="small-muted">Movement type</label>${selF("mov.type", [["", "All types"]].concat(movTypes.map((t) => [t, t])), "Movement type")}</div></div><div id="res">${RES.mov()}</div>`;
-A.adjForm = () =>
+A.adjForm = () => {
+  if (!guard(hasOp("adjust"))) return;
   modal({
     title: "Record Adjustment",
     ok: "Save Adjustment",
@@ -615,7 +644,12 @@ A.adjForm = () =>
       if (ok.includes(false)) return false;
       q > 0 ? addBatch(pid, q, null, null) : deduct(pid, -q);
       logMove(pid, "Adjustment", q, "", val("aj_r"));
+      logAudit(
+        "Stock",
+        `Adjustment ${q > 0 ? "+" : ""}${q} ${prod(pid).name}: ${val("aj_r")}`,
+      );
       toast("Adjustment saved (simulated).");
       refresh();
     },
   });
+};

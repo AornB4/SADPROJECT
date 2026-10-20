@@ -138,8 +138,29 @@ const S = {
       username: "msantos",
       role: "Manager",
       active: true,
+      pw: "demo1234",
+      ops: [],
+    },
+    {
+      id: 2,
+      name: "Juan Dela Cruz",
+      username: "jdelacruz",
+      role: "Employee",
+      active: true,
+      pw: "demo1234",
+      ops: ["deliveries", "spoilage"],
+    },
+    {
+      id: 3,
+      name: "Ana Reyes",
+      username: "areyes",
+      role: "Employee",
+      active: true,
+      pw: "demo1234",
+      ops: [],
     },
   ],
+  audit: [],
   cart: [],
   tender: "",
   dl: null,
@@ -151,6 +172,8 @@ const S = {
     sale: 1008,
     del: 4,
     spo: 3,
+    user: 4,
+    aud: 1,
   },
 };
 /* batches: id, product, qty now, arrival offset, expiry offset (null = none), supplier */
@@ -440,3 +463,62 @@ function logMove(pid, type, qty, ref, reason) {
     reason: reason || "",
   });
 }
+
+/* ----- roles, permissions & audit log ----- */
+const ROLE_LABEL = { Manager: "Administrator / Manager", Employee: "Employee" };
+/* Inventory operations a Manager can assign to an Employee */
+const OPS = [
+  ["deliveries", "Record deliveries (stock in)"],
+  ["spoilage", "Record spoilage and returns"],
+  ["adjust", "Stock adjustments"],
+];
+const isMgr = () => !!S.user && S.user.role === "Manager";
+const hasOp = (op) =>
+  isMgr() || (!!S.user && (S.user.ops || []).includes(op));
+const mySales = () =>
+  isMgr() ? S.sales : S.sales.filter((s) => s.user === S.user.name);
+const guard = (ok) => {
+  if (!ok) toast("You do not have permission for this action.", "err");
+  return ok;
+};
+function logAudit(action, detail, who) {
+  S.audit.unshift({
+    id: "AU-" + String(S.n.aud++).padStart(4, "0"),
+    dt: nowStamp(),
+    user: who || (S.user ? S.user.name : "—"),
+    action,
+    detail,
+  });
+}
+function renameUser(a, b) {
+  [S.sales, S.movements, S.spoilage, S.audit].forEach((L) =>
+    L.forEach((x) => {
+      if (x.user === a) x.user = b;
+    }),
+  );
+}
+(function seedAudit() {
+  const seed = [
+    [0, "08:55", "Ana Reyes", "Login", "Logged in"],
+    [-1, "17:05", "Juan Dela Cruz", "Stock", "Return SP-0002: Canned Tuna 155g ×1 (Customer changed mind, Return to stock)"],
+    [-1, "08:28", "Juan Dela Cruz", "Delivery", "Saved delivery DR-0003 from Fresh Mart Supply: 2 item(s), ₱666.00"],
+    [-2, "13:42", "Maria Santos", "Stock", "Adjustment -2 Laundry Soap Bar: Count correction after stock check"],
+    [-3, "09:03", "Juan Dela Cruz", "Delivery", "Saved delivery DR-0002 from Fresh Mart Supply: 1 item(s), ₱96.00"],
+    [-4, "15:01", "Juan Dela Cruz", "Stock", "Spoilage SP-0001: Yogurt Cup ×3 (Spoiled, Discard)"],
+    [-5, "09:01", "Maria Santos", "Stock", "Adjustment +4 Cooking Oil 1L: Found unrecorded stock"],
+    [-6, "08:08", "Juan Dela Cruz", "Delivery", "Saved delivery DR-0001 from Fresh Mart Supply: 1 item(s), ₱540.00"],
+    [-7, "16:20", "Maria Santos", "User", "Created account areyes (Employee: sales only)"],
+    [-7, "16:18", "Maria Santos", "User", "Created account jdelacruz (Employee: Record deliveries (stock in), Record spoilage and returns)"],
+    [-7, "16:00", "Maria Santos", "Login", "Logged in"],
+  ];
+  seed.forEach(([d, t, user, action, detail], i) =>
+    S.audit.push({
+      id: "AU-" + String(seed.length - i).padStart(4, "0"),
+      dt: `${off(d)} ${t}`,
+      user,
+      action,
+      detail,
+    }),
+  );
+  S.n.aud = seed.length + 1;
+})();

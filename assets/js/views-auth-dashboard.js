@@ -18,20 +18,8 @@ Auth.login = () =>
     "Enter your username and password.",
     `<form data-form="doLogin" novalidate class="row g-3"><div class="col-12"><label class="form-label" for="lu">Username <span class="req">*</span></label><input class="form-control" id="lu" autocomplete="off"><div class="invalid-feedback" id="e-lu"></div></div>${pw("lp", "Password")}
  <div id="lerr" class="col-12 text-danger small" role="alert"></div><div class="col-12"><button class="btn btn-primary w-100">Log in</button></div>
- <div class="col-12"><a href="#/forgot">Forgot password?</a></div></form>
- <hr><div class="small-muted mb-2">Manager account (password: <b>demo1234</b>):</div>
- <div class="d-grid gap-2">${S.users
-   .filter((u) => u.active)
-   .map(
-     (u) =>
-       `<button class="btn btn-outline-primary btn-sm" data-act="fill" data-a="${u.username}">${u.role}: ${u.name}</button>`,
-   )
-   .join("")}</div>`,
+ <div class="col-12"><a href="#/forgot">Forgot password?</a></div></form>`,
   );
-A.fill = (u) => {
-  $("#lu").value = u;
-  $("#lp").value = "demo1234";
-};
 A.doLogin = () => {
   clearErr();
   $("#lerr").textContent = "";
@@ -43,7 +31,8 @@ A.doLogin = () => {
   )
     return;
   const x = S.users.find((x) => x.username === u.toLowerCase());
-  if (!x || p !== "demo1234") {
+  if (!x || p !== x.pw) {
+    logAudit("Login", `Failed login attempt (username: ${u})`, "—");
     $("#lerr").textContent = "Incorrect username or password. Try again.";
     return;
   }
@@ -52,6 +41,7 @@ A.doLogin = () => {
     return;
   }
   S.user = x;
+  logAudit("Login", "Logged in");
   location.hash = "#/dashboard";
   toast(`Welcome back, ${x.name.split(" ")[0]}!`);
 };
@@ -64,7 +54,7 @@ Auth.forgot = () =>
 A.doForgot = () => {
   clearErr();
   if (!check("fu", val("fu"), "Enter your username or email.")) return;
-  S.reset = {};
+  S.reset = { u: val("fu").toLowerCase() };
   location.hash = "#/otp";
   toast("Code sent (simulated).", "info");
 };
@@ -104,6 +94,11 @@ A.doReset = () => {
     ) | !check("np2", $("#np2").value === p, "Passwords do not match.")
   )
     return;
+  const ru = S.users.find((x) => x.username === (S.reset || {}).u);
+  if (ru) {
+    ru.pw = p;
+    logAudit("Account", "Password reset using verification code", ru.name);
+  }
   location.hash = "#/login";
   toast("Password changed (simulated). You can log in now.");
 };
@@ -112,20 +107,19 @@ A.doReset = () => {
 V.dashboard = () => {
   const ps = S.products.filter((p) => p.active),
     al = alerts(),
-    today = S.sales.filter((s) => s.dt.startsWith(off(0))),
+    today = mySales().filter((s) => s.dt.startsWith(off(0))),
     amt = today.reduce((s, x) => s + x.total, 0);
   const card = (href, icon, n, l, cls = "") =>
     `<div class="col-6 col-md-4 col-xxl-2"><a class="stat ${cls}" href="#/${href}"><i class="bi bi-${icon}"></i><div><b>${n}</b><small>${l}</small></div></a></div>`;
-  const K = S.user.role === "Cashier";
+  const K = !hasOp("deliveries");
   return (
     pageHead("Dashboard", `Welcome back, ${esc(S.user.name.split(" ")[0])}!`) +
     `<div class="row g-3 mb-4">
  ${card("products", "box-seam", ps.length, "Active products")}${card("inventory?show=low", "exclamation-triangle", al.low, "Low stock", "low")}${card("inventory?show=out", "x-octagon", al.out, "Out of stock", "low")}
- ${K ? "" : card("expiration?show=soon", "hourglass-split", al.soon, "Expiring soon", "soon") + card("expiration?show=expired", "x-circle", al.exp, "Expired batches", "low")}${card("pos?tab=history", "cash-coin", peso(amt), `Today's sales (${today.length})`)}</div>
- <div class="row g-3"><div class="col-lg-6"><div class="card"><div class="card-h">Recent Sales<a href="#/pos?tab=history" class="small">View all</a></div>${tbl(
+ ${card("expiration?show=soon", "hourglass-split", al.soon, "Expiring soon", "soon") + card("expiration?show=expired", "x-circle", al.exp, "Expired batches", "low")}${card("pos?tab=history", "cash-coin", peso(amt), `${isMgr() ? "Today's sales" : "My sales today"} (${today.length})`)}</div>
+ <div class="row g-3"><div class="col-lg-${K ? 12 : 6}"><div class="card"><div class="card-h">Recent Sales<a href="#/pos?tab=history" class="small">View all</a></div>${tbl(
    ["Ref", "Date", "Total"],
-   S.sales
-     .slice(0, 4)
+   mySales().slice(0, 4)
      .map(
        (s) =>
          `<tr><td>${s.ref}</td><td>${dtfmt(s.dt)}</td><td>${peso(s.total)}</td></tr>`,
