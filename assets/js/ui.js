@@ -1,6 +1,8 @@
 /* ===== Shared UI helpers & reusable components ===== */
 const $ = (s, r = document) => r.querySelector(s),
   $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const brandLogo = (className) =>
+  `<img class="${className}" src="assets/images/cooperative-logo.png" alt="Sta. Monica of Bustos cooperative logo">`;
 const esc = (s) =>
   String(s ?? "").replace(
     /[&<>"']/g,

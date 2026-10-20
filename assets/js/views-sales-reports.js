@@ -6,6 +6,20 @@ const receiptHtml = (
 ) => `<div class="receipt"><div class="text-center"><b>STA. MONICA OF BUSTOS<br>MULTIPURPOSE COOPERATIVE</b><br>Sales Receipt (Sample)<br><small>NOT AN OFFICIAL RECEIPT</small></div><hr>Ref: ${s.ref}<br>Date: ${dtfmt(s.dt)}<br>Cashier: ${esc(s.user)}<hr>
  <table>${s.lines.map((l) => `<tr><td colspan="2">${esc(prod(l.pid).name)}</td></tr><tr><td>&nbsp;&nbsp;${l.qty} x ${peso(l.price)}</td><td class="text-end">${peso(l.qty * l.price)}</td></tr>`).join("")}</table><hr>
  <table><tr><td><b>TOTAL</b></td><td class="text-end"><b>${peso(s.total)}</b></td></tr><tr><td>Amount received</td><td class="text-end">${peso(s.tendered)}</td></tr><tr><td>Change</td><td class="text-end">${peso(s.tendered - s.total)}</td></tr></table><hr><div class="text-center">Thank you!</div></div>`;
+function printReceipt(s) {
+  const area = $("#print-area");
+  area.innerHTML = receiptHtml(s);
+  document.body.classList.add("printing-receipt");
+  window.addEventListener(
+    "afterprint",
+    () => {
+      document.body.classList.remove("printing-receipt");
+      area.innerHTML = "";
+    },
+    { once: true },
+  );
+  setTimeout(() => window.print(), 300);
+}
 RES.pos = () => {
   const f = F.pos,
     L = S.products.filter(
@@ -149,15 +163,19 @@ A.rcpt = (ref) =>
     body: receiptHtml(S.sales.find((s) => s.ref === ref)),
     ok: "Print",
     onOk: () => {
-      setTimeout(() => window.print(), 300);
+      printReceipt(S.sales.find((s) => s.ref === ref));
     },
   });
+A.printRcpt = (ref) => {
+  const sale = S.sales.find((s) => s.ref === ref);
+  if (sale) printReceipt(sale);
+};
 V.receipt = (r) => {
   const s = S.sales.find((x) => x.ref === r.arg);
   if (!s || (!isMgr() && s.user !== S.user.name))
     return '<div class="alert alert-warning">Sale not found.</div>';
   return `<div class="text-center mb-3 no-print"><i class="bi bi-check-circle-fill fs-1" style="color:var(--green)"></i><h1>Sale completed</h1><div class="muted">Simulated sale ${s.ref}. Stock on screen has been updated.</div></div>${receiptHtml(s)}
- <div class="d-flex justify-content-center gap-2 mt-3 no-print flex-wrap"><button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print Receipt</button><a class="btn btn-outline-primary" href="#/pos">New Sale</a><a class="btn btn-outline-secondary" href="#/pos?tab=history">Sales History</a></div>`;
+ <div class="d-flex justify-content-center gap-2 mt-3 no-print flex-wrap"><button class="btn btn-primary" data-act="printRcpt" data-a="${s.ref}"><i class="bi bi-printer"></i> Print Receipt</button><a class="btn btn-outline-primary" href="#/pos">New Sale</a><a class="btn btn-outline-secondary" href="#/pos?tab=history">Sales History</a></div>`;
 };
 /* ---- Reports ---- */
 const REPORTS = {

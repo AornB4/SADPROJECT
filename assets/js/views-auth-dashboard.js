@@ -4,7 +4,7 @@ const authCard = (
   title,
   sub,
   body,
-) => `<div class="auth"><div class="card"><div class="text-center mb-3"><i class="bi bi-cart3 fs-1" style="color:var(--blue)"></i><div class="fw-bold" style="color:var(--blue-dark)">Sta. Monica of Bustos</div><small class="muted">Multipurpose Cooperative · Sales and Inventory</small></div>
+) => `<div class="auth"><div class="card"><div class="text-center mb-3">${brandLogo("brand-logo auth-brand-logo")}<div class="fw-bold" style="color:var(--blue-dark)">Sta. Monica of Bustos</div><small class="muted">Multipurpose Cooperative · Sales and Inventory</small></div>
  <h1 class="h4 text-center">${title}</h1><p class="muted text-center">${sub}</p>${body}<div class="sim-note mt-3"><i class="bi bi-info-circle"></i> Simulated prototype. No real login, email, or OTP is used.</div></div></div>`;
 const pw = (id, label) =>
   `<div class="col-12"><label class="form-label" for="${id}">${label} <span class="req">*</span></label><div class="input-group"><input class="form-control" id="${id}" type="password" autocomplete="off"><button class="btn btn-outline-secondary" type="button" data-act="showpw" data-a="${id}" aria-label="Show or hide password"><i class="bi bi-eye"></i></button><div class="invalid-feedback" id="e-${id}"></div></div></div>`;

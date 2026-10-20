@@ -21,7 +21,7 @@ const ROUTE_RULE = {
   audit: "mgr",
 };
 const NAV = [
-  ["dashboard", "Dashboard", "speedometer2"],
+  ["dashboard", "Dashboard", "grid-1x2"],
   ["products", "Products", "box-seam"],
   {
     key: "inv",
@@ -161,7 +161,7 @@ function shell() {
         : `<a class="nv ${activeId(r) === n[0] ? "active" : ""}" href="#/${n[0]}" ${activeId(r) === n[0] ? 'aria-current="page"' : ""}><i class="bi bi-${n[2]}"></i><span>${n[1]}</span></a>`,
     )
     .join("");
-  return `<aside class="sidebar${u.role === "Manager" ? " manager" : ""}" aria-label="Main navigation"><div class="sb-brand"><i class="bi bi-cart3"></i><div><b>Sta. Monica of Bustos</b><small>Multipurpose Cooperative</small></div></div>
+  return `<aside class="sidebar${u.role === "Manager" ? " manager" : ""}" aria-label="Main navigation"><div class="sb-brand">${brandLogo("brand-logo")}<div><b>Sta. Monica of Bustos</b><small>Multipurpose Cooperative</small></div></div>
  <nav class="sb-nav">${nav}</nav>
  <div class="sb-user dropup"><button class="nv" data-bs-toggle="dropdown" aria-label="Account menu"><span class="avatar">${u.name
    .split(" ")
@@ -172,9 +172,9 @@ function shell() {
    )}</span><span class="uinfo"><b class="d-block">${esc(u.name)}</b><small>${ROLE_LABEL[u.role]}</small></span></button>
  <ul class="dropdown-menu"><li><a class="dropdown-item" href="#/account">My Account</a></li><li><button class="dropdown-item" data-act="logout">Log out</button></li></ul></div></aside>
  <div class="sb-backdrop" data-act="drawer"></div>
- <div class="main"><header class="topbar no-print"><button class="btn btn-outline-secondary" data-act="drawer" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
+ <div class="main"><header class="topbar no-print"><button class="btn topbar-icon" data-act="drawer" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
  <strong class="me-auto fs-5">${TITLES[r] || ""}</strong><span class="muted d-none d-md-inline">${dfmt(off(0))}</span>
- <div class="dropdown"><button class="btn btn-outline-secondary position-relative" data-bs-toggle="dropdown" aria-label="Alerts, ${tot} items need attention"><i class="bi bi-bell"></i>${tot ? `<span class="badge rounded-pill text-bg-danger position-absolute top-0 start-100 translate-middle">${tot}</span>` : ""}</button>
+ <div class="dropdown"><button class="btn topbar-icon position-relative" data-bs-toggle="dropdown" aria-label="Alerts, ${tot} items need attention"><i class="bi bi-bell"></i>${tot ? `<span class="badge rounded-pill text-bg-danger position-absolute top-0 start-100 translate-middle">${tot}</span>` : ""}</button>
  <ul class="dropdown-menu dropdown-menu-end"><li class="dropdown-header">Needs attention</li>
  <li><a class="dropdown-item" href="#/inventory?show=low">${al.low} low-stock products</a></li><li><a class="dropdown-item" href="#/inventory?show=out">${al.out} out-of-stock products</a></li>
  <li><a class="dropdown-item" href="#/expiration?show=soon">${al.soon} batches expiring soon</a></li><li><a class="dropdown-item" href="#/expiration?show=expired">${al.exp} expired batches</a></li></ul></div></header>
