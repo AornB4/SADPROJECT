@@ -115,7 +115,7 @@ V.products = () =>
     isMgr()
       ? "Manage product information."
       : "View product prices and stock availability.",
-    isMgr()
+    hasOp("products")
       ? `<button class="btn btn-primary" data-act="prodForm"><i class="bi bi-plus-lg"></i> Add Product</button>`
       : "",
   ) +
@@ -141,7 +141,8 @@ V.products = () =>
       : ""
   }</div><div id="res">${RES.prod()}</div>`;
 A.prodForm = (id) => {
-  if (!guard(isMgr())) return;
+  /* Employees with the "Add new products" operation may add; only Managers may edit existing ones. */
+  if (!guard(isMgr() || (!id && hasOp("products")))) return;
   const p = id
     ? prod(id)
     : {

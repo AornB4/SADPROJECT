@@ -148,7 +148,7 @@ const S = {
       role: "Employee",
       active: true,
       pw: "demo1234",
-      ops: ["deliveries", "spoilage"],
+      ops: ["products", "deliveries", "spoilage"],
     },
     {
       id: 3,
@@ -468,6 +468,7 @@ function logMove(pid, type, qty, ref, reason) {
 const ROLE_LABEL = { Manager: "Administrator / Manager", Employee: "Employee" };
 /* Inventory operations a Manager can assign to an Employee */
 const OPS = [
+  ["products", "Add new products"],
   ["deliveries", "Record deliveries (stock in)"],
   ["spoilage", "Record spoilage and returns"],
   ["adjust", "Stock adjustments"],
@@ -508,7 +509,7 @@ function renameUser(a, b) {
     [-5, "09:01", "Maria Santos", "Stock", "Adjustment +4 Cooking Oil 1L: Found unrecorded stock"],
     [-6, "08:08", "Juan Dela Cruz", "Delivery", "Saved delivery DR-0001 from Fresh Mart Supply: 1 item(s), ₱540.00"],
     [-7, "16:20", "Maria Santos", "User", "Created account areyes (Employee: sales only)"],
-    [-7, "16:18", "Maria Santos", "User", "Created account jdelacruz (Employee: Record deliveries (stock in), Record spoilage and returns)"],
+    [-7, "16:18", "Maria Santos", "User", "Created account jdelacruz (Employee: Add new products, Record deliveries (stock in), Record spoilage and returns)"],
     [-7, "16:00", "Maria Santos", "Login", "Logged in"],
   ];
   seed.forEach(([d, t, user, action, detail], i) =>
