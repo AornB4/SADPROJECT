@@ -14,7 +14,6 @@ const ACCESS = {
   suppliers: "MC",
   reports: "MC",
   categories: "MC",
-  users: "M",
   settings: "M",
   account: "MCK",
 };
@@ -42,7 +41,6 @@ const NAV = [
     icon: "gear",
     kids: [
       ["categories", "Categories"],
-      ["users", "User Management"],
       ["settings", "Alert Settings"],
       ["account", "My Account"],
     ],
@@ -74,7 +72,7 @@ Object.keys(DEF).forEach((k) => {
   F[k] = { ...DEF[k] };
   P[k] = 1;
 });
-const AUTH = ["login", "signup", "forgot", "otp", "reset"];
+const AUTH = ["login", "forgot", "otp", "reset"];
 let ROUTE = "";
 const allowed = (r) => S.user && (ACCESS[r] || "").includes(RC[S.user.role]);
 const navItems = () =>
@@ -111,7 +109,6 @@ const TITLES = {
   suppliers: "Suppliers",
   reports: "Reports",
   categories: "Categories",
-  users: "User Management",
   settings: "Alert Settings",
   account: "My Account",
 };
@@ -149,7 +146,7 @@ function shell() {
    .join(
      "",
    )}</span><span class="uinfo"><b class="d-block">${esc(u.name)}</b><small>${u.role}</small></span></button>
- <ul class="dropdown-menu"><li><a class="dropdown-item" href="#/account">My Account</a></li><li><a class="dropdown-item" href="#/login" data-act="switch">Switch demo user</a></li><li><button class="dropdown-item" data-act="logout">Log out</button></li></ul></div></aside>
+ <ul class="dropdown-menu"><li><a class="dropdown-item" href="#/account">My Account</a></li><li><button class="dropdown-item" data-act="logout">Log out</button></li></ul></div></aside>
  <div class="sb-backdrop" data-act="drawer"></div>
  <div class="main"><header class="topbar no-print"><button class="btn btn-outline-secondary" data-act="drawer" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
  <strong class="me-auto fs-5">${TITLES[r] || ""}</strong><span class="muted d-none d-md-inline">${dfmt(off(0))}</span>
@@ -247,9 +244,6 @@ A.grp = (k, _, t) => {
 A.drawer = () => {
   if (innerWidth < 992) document.body.classList.toggle("sb-open");
   else document.body.classList.toggle("sb-collapsed");
-};
-A.switch = () => {
-  S.user = null;
 };
 A.logout = () =>
   confirmBox(

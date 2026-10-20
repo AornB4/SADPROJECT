@@ -18,8 +18,8 @@ Auth.login = () =>
     "Enter your username and password.",
     `<form data-form="doLogin" novalidate class="row g-3"><div class="col-12"><label class="form-label" for="lu">Username <span class="req">*</span></label><input class="form-control" id="lu" autocomplete="off"><div class="invalid-feedback" id="e-lu"></div></div>${pw("lp", "Password")}
  <div id="lerr" class="col-12 text-danger small" role="alert"></div><div class="col-12"><button class="btn btn-primary w-100">Log in</button></div>
- <div class="col-12 d-flex justify-content-between"><a href="#/forgot">Forgot password?</a><a href="#/signup">Create account</a></div></form>
- <hr><div class="small-muted mb-2">Demo accounts (password: <b>demo1234</b>) — pick a role to preview role-based menus:</div>
+ <div class="col-12"><a href="#/forgot">Forgot password?</a></div></form>
+ <hr><div class="small-muted mb-2">Manager account (password: <b>demo1234</b>):</div>
  <div class="d-grid gap-2">${S.users
    .filter((u) => u.active)
    .map(
@@ -48,66 +48,12 @@ A.doLogin = () => {
     return;
   }
   if (!x.active) {
-    $("#lerr").textContent = x.pending
-      ? "Your account is waiting for manager approval."
-      : "This account is inactive. Please contact the manager.";
+    $("#lerr").textContent = "This account is inactive. Please contact the manager.";
     return;
   }
   S.user = x;
   location.hash = "#/dashboard";
   toast(`Welcome back, ${x.name.split(" ")[0]}!`);
-};
-Auth.signup = () =>
-  authCard(
-    "Create account",
-    "Your request will be reviewed by the manager.",
-    `<form data-form="doSignup" novalidate class="row g-3">${fld("sn", "Full name", { col: "col-12" })}${fld("su", "Username", { col: "col-12" })}${fld("se", "Email", { type: "email", col: "col-12" })}${fld(
-      "sr",
-      "Role requested",
-      {
-        col: "col-12",
-        opts: [
-          ["", "Select role"],
-          ["Inventory Clerk", "Inventory Clerk"],
-          ["Cashier", "Cashier"],
-        ],
-      },
-    )}${pw("sp", "Password")}${pw("sp2", "Confirm password")}
- <div class="col-12"><button class="btn btn-primary w-100">Submit request</button></div><div class="col-12 text-center"><a href="#/login">Back to log in</a></div></form>`,
-  );
-A.doSignup = () => {
-  clearErr();
-  const u = val("su").toLowerCase(),
-    p = $("#sp").value;
-  const ok = [
-    check("sn", val("sn"), "Enter your full name."),
-    check(
-      "su",
-      /^[a-z0-9_.]{4,}$/.test(u) && !S.users.some((x) => x.username === u),
-      /^[a-z0-9_.]{4,}$/.test(u)
-        ? "That username is already taken."
-        : "Use 4 or more letters or numbers.",
-    ),
-    check("se", /^\S+@\S+\.\S+$/.test(val("se")), "Enter a valid email."),
-    check("sr", val("sr"), "Select a role."),
-    check(
-      "sp",
-      p.length >= 8 && /\d/.test(p),
-      "Use at least 8 characters with a number.",
-    ),
-    check("sp2", $("#sp2").value === p, "Passwords do not match."),
-  ];
-  if (ok.includes(false)) return;
-  S.users.push({
-    id: S.n.user++,
-    name: val("sn"),
-    username: u,
-    role: val("sr"),
-    active: false,
-    pending: true,
-  });
-  location.hash = "#/login";
-  toast("Request sent. Wait for manager approval before logging in.", "info");
 };
 Auth.forgot = () =>
   authCard(

@@ -1,4 +1,4 @@
-/* ===== Suppliers, Categories, Users, Settings, Account ===== */
+/* ===== Suppliers, Categories, Settings, Account ===== */
 /* ---- Suppliers ---- */
 RES.sup = () => {
   const f = F.sup,
@@ -186,85 +186,6 @@ A.catToggle = (id) => {
     },
     c.active ? "Deactivate" : "Reactivate",
     c.active,
-  );
-};
-/* ---- User Management ---- */
-V.users = () =>
-  pageHead(
-    "User Management",
-    "Accounts for managers, inventory clerks, and cashiers.",
-    `<button class="btn btn-primary" data-act="userForm"><i class="bi bi-plus-lg"></i> Add User</button>`,
-  ) +
-  simNote(
-    "Roles control which menu items appear. No real authentication or password storage.",
-  ) +
-  `<div class="card">${tbl(
-    ["Name", "Username", "Role", "Status", "Actions"],
-    S.users.map(
-      (u) =>
-        `<tr><td><b>${esc(u.name)}</b></td><td>${u.username}</td><td>${u.role}</td><td>${u.pending ? pill("soon", "hourglass-split", "Pending approval") : activePill(u.active)}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="userForm" data-a="${u.id}" aria-label="Edit ${esc(u.name)}"><i class="bi bi-pencil-square"></i> Edit</button> <button class="btn btn-outline-secondary btn-sm" data-act="userToggle" data-a="${u.id}">${u.pending ? "Approve" : u.active ? "Deactivate" : "Reactivate"}</button></td></tr>`,
-    ),
-  )}</div>`;
-A.userForm = (id) => {
-  const u = id
-    ? S.users.find((x) => x.id == id)
-    : { name: "", username: "", role: "" };
-  modal({
-    title: id ? "Edit User" : "Add User",
-    ok: "Save User",
-    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("un", "Full name", { val: u.name })}${fld("uu", "Username", { val: u.username })}${fld("ur", "Role", { val: u.role, opts: [["", "Select role"], "Manager", "Inventory Clerk", "Cashier"].map((x) => (Array.isArray(x) ? x : [x, x])) })}${id ? "" : fld("upw", "Temporary password", { type: "password" })}</form>`,
-    onOk: () => {
-      clearErr();
-      const un = val("uu").toLowerCase();
-      const ok = [
-        check("un", val("un"), "Enter the full name."),
-        check(
-          "uu",
-          /^[a-z0-9_.]{4,}$/.test(un) &&
-            !S.users.some((x) => x.username === un && x.id != id),
-          /^[a-z0-9_.]{4,}$/.test(un)
-            ? "Username already used."
-            : "Use 4+ letters or numbers.",
-        ),
-        check("ur", val("ur"), "Select a role."),
-      ];
-      if (!id)
-        ok.push(check("upw", val("upw").length >= 8, "At least 8 characters."));
-      if (ok.includes(false)) return false;
-      id
-        ? Object.assign(u, { name: val("un"), username: un, role: val("ur") })
-        : S.users.push({
-            id: S.n.user++,
-            name: val("un"),
-            username: un,
-            role: val("ur"),
-            active: true,
-          });
-      toast("User saved.");
-      refresh();
-    },
-  });
-};
-A.userToggle = (id) => {
-  const u = S.users.find((x) => x.id == id);
-  if (u.id === S.user.id)
-    return toast("You cannot deactivate your own account.", "err");
-  confirmBox(
-    u.pending
-      ? "Approve account?"
-      : u.active
-        ? "Deactivate account?"
-        : "Reactivate account?",
-    `${esc(u.name)} (${u.role}). Records are kept either way.`,
-    () => {
-      if (u.pending) {
-        u.pending = false;
-        u.active = true;
-      } else u.active = !u.active;
-      toast("User updated.");
-      refresh();
-    },
-    "Confirm",
   );
 };
 /* ---- Settings & Account ---- */

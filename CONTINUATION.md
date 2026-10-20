@@ -34,7 +34,7 @@ Sources: Ch.1 scope (product/stock monitoring, perishable/non-perishable, low-st
 - [x] Expiration Monitoring (amber vs red), record spoilage from a row
 - [x] Spoilage and Returns (return disposition: only “Return to stock” restores stock)
 - [x] Reports (8 types, filters, summaries, Print Report + print CSS)
-- [x] User Management, Settings (expiry warning days, default minimum), My Account (large text)
+- [x] Manager-only account, Settings (expiry warning days, default minimum), My Account (large text); user management removed
 - [x] Role-based menus (Manager / Inventory Clerk / Cashier), responsive drawer, collapsible sidebar
 
 ## Not done / known issues
