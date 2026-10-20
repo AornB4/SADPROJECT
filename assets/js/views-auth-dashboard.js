@@ -117,35 +117,55 @@ V.dashboard = () => {
     `<div class="row g-3 mb-4">
  ${card("products", "box-seam", ps.length, "Active products")}${card("inventory?show=low", "exclamation-triangle", al.low, "Low stock", "low")}${card("inventory?show=out", "x-octagon", al.out, "Out of stock", "low")}
  ${card("expiration?show=soon", "hourglass-split", al.soon, "Expiring soon", "soon") + card("expiration?show=expired", "x-circle", al.exp, "Expired batches", "low")}${card("pos?tab=history", "cash-coin", peso(amt), `${isMgr() ? "Today's sales" : "My sales today"} (${today.length})`)}</div>
- <div class="row g-3"><div class="col-lg-${K ? 12 : 6}"><div class="card"><div class="card-h">Recent Sales<a href="#/pos?tab=history" class="small">View all</a></div>${tbl(
-   ["Ref", "Date", "Total"],
-   mySales().slice(0, 4)
-     .map(
-       (s) =>
-         `<tr><td>${s.ref}</td><td>${dtfmt(s.dt)}</td><td>${peso(s.total)}</td></tr>`,
-     ),
- )}</div></div>
+ <div class="row g-3"><div class="col-lg-${K ? 12 : 6}">${dataCard({
+      title: "Recent Sales",
+      meta: `${mySales().length} sale${mySales().length === 1 ? "" : "s"}`,
+      actions: `<a href="#/pos?tab=history" class="btn btn-sm btn-outline-primary">View all</a>`,
+      body: tbl(
+        ["Ref", "Date", "Total"],
+        mySales()
+          .slice(0, 4)
+          .map(
+            (s) =>
+              `<tr><td><b>${s.ref}</b></td><td>${dtfmt(s.dt)}</td><td>${peso(s.total)}</td></tr>`,
+          ),
+        "No sales recorded yet.",
+      ),
+    })}</div>
  ${
    K
      ? ""
-     : `<div class="col-lg-6"><div class="card"><div class="card-h">Recent Deliveries<a href="#/deliveries" class="small">View all</a></div>${tbl(
-         ["Ref", "Date", "Supplier", "Items"],
-         S.deliveries
-           .slice(0, 4)
-           .map(
-             (d) =>
-               `<tr><td>${d.ref}</td><td>${dfmt(d.date)}</td><td>${esc(supOf(d.sup).name)}</td><td>${d.lines.length}</td></tr>`,
-           ),
-       )}</div></div>
- <div class="col-12"><div class="card"><div class="card-h">Recent Activity<a href="#/movements" class="small">All stock movements</a></div>${tbl(
-   ["When", "Product", "Type", "Qty"],
-   S.movements
-     .slice(0, 6)
-     .map(
-       (m) =>
-         `<tr><td>${dtfmt(m.dt)}</td><td>${esc(prod(m.pid).name)}</td><td>${m.type}</td><td>${m.qty > 0 ? "+" : ""}${m.qty}</td></tr>`,
-     ),
- )}</div></div>`
- }</div>`
+     : `<div class="col-lg-6">${dataCard({
+         title: "Recent Deliveries",
+         meta: `${S.deliveries.length} deliver${S.deliveries.length === 1 ? "y" : "ies"}`,
+         actions: `<a href="#/deliveries" class="btn btn-sm btn-outline-primary">View all</a>`,
+         body: tbl(
+           ["Ref", "Date", "Supplier", "Items"],
+           S.deliveries
+             .slice(0, 4)
+             .map(
+               (d) =>
+                 `<tr><td><b>${d.ref}</b></td><td>${dfmt(d.date)}</td><td>${esc(supOf(d.sup).name)}</td><td>${d.lines.length}</td></tr>`,
+             ),
+           "No deliveries recorded yet.",
+         ),
+       })}</div>
+ <div class="col-12">${dataCard({
+   title: "Recent Activity",
+   meta: `${S.movements.length} movement${S.movements.length === 1 ? "" : "s"}`,
+   actions: `<a href="#/movements" class="btn btn-sm btn-outline-primary">All stock movements</a>`,
+   body: tbl(
+     ["When", "Product", "Type", "Qty"],
+     S.movements
+       .slice(0, 6)
+       .map(
+         (m) =>
+           `<tr><td>${dtfmt(m.dt)}</td><td>${esc(prod(m.pid).name)}</td><td>${m.type}</td><td>${m.qty > 0 ? "+" : ""}${m.qty}</td></tr>`,
+       ),
+     "No stock activity yet.",
+   ),
+ })}</div>`
+ }
+</div>`
   );
 };

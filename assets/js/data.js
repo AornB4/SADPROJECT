@@ -162,6 +162,7 @@ const S = {
   ],
   audit: [],
   cart: [],
+  notifRead: {},
   tender: "",
   dl: null,
   n: {

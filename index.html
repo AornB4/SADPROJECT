@@ -23,6 +23,26 @@
   </div></div>
 </div>
 <div id="toasts" class="toast-container position-fixed top-0 end-0 p-3 no-print"></div>
+<div id="sbTip" class="sb-tip no-print" role="tooltip" aria-hidden="true"></div>
+<div class="notif-scrim no-print" id="notifScrim" data-act="notifClose"></div>
+<section class="notif-panel no-print" id="notifPanel" role="dialog" aria-labelledby="notifTitle" aria-hidden="true">
+  <header class="notif-panel-head">
+    <h2 class="notif-panel-title" id="notifTitle">Notifications</h2>
+    <div class="notif-panel-head-actions">
+      <button class="notif-icon-btn" type="button" data-act="notifReadAll" aria-label="Mark all notifications as read" title="Mark all as read"><i class="bi bi-check2-all"></i></button>
+      <button class="notif-icon-btn" type="button" data-act="notifClose" aria-label="Close notifications"><i class="bi bi-x-lg"></i></button>
+    </div>
+  </header>
+  <div class="notif-tabs" id="notifTabs" role="tablist" aria-label="Filter notifications"></div>
+  <div class="notif-search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input type="search" class="notif-search-input" id="notifSearch" data-nf="1" placeholder="Search notifications" aria-label="Search notifications" autocomplete="off">
+  </div>
+  <div class="notif-panel-body" id="notifList"></div>
+  <footer class="notif-panel-foot">
+    <button class="notif-see-all" type="button" data-act="notifSeeAll"><span>See all alerts</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+  </footer>
+</section>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="assets/js/data.js"></script>
 <script src="assets/js/ui.js"></script>

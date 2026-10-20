@@ -7,16 +7,21 @@ RES.sup = () => {
         has(s.name + s.contact, f.q) &&
         (f.status === "all" || (f.status === "active") === s.active),
     );
-  return `${actionLegend(
-    isMgr() ? ["view", "edit", "status"] : ["view"],
-  )}<div class="card">${tbl(
-    ["Supplier", "Contact person", "Phone", "Status", "Actions"],
-    L.map(
-      (s) =>
-        `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact)}</td><td>${esc(s.phone)}</td><td>${activePill(s.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="supView" data-a="${s.id}" aria-label="View ${esc(s.name)}"><i class="bi bi-eye"></i></button>${isMgr() ? ` <button class="btn btn-sm table-action action-edit" data-act="supForm" data-a="${s.id}" aria-label="Edit ${esc(s.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="supToggle" data-a="${s.id}" aria-label="${s.active ? "Deactivate" : "Reactivate"} ${esc(s.name)}"><i class="bi bi-arrow-repeat"></i></button>` : ""}</td></tr>`,
-    ),
-    "No suppliers found.",
-  )}</div>`;
+  return dataCard({
+    title: "Supplier list",
+    meta: `${L.length} supplier${L.length === 1 ? "" : "s"}`,
+    body:
+      actionLegend(isMgr() ? ["view", "edit", "status"] : ["view"]) +
+      tbl(
+        ["Supplier", "Contact person", "Phone", "Status", "Actions"],
+        sl(L, "sup").map(
+          (s) =>
+            `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact)}</td><td>${esc(s.phone)}</td><td>${activePill(s.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="supView" data-a="${s.id}" aria-label="View ${esc(s.name)}"><i class="bi bi-eye"></i></button>${isMgr() ? ` <button class="btn btn-sm table-action action-edit" data-act="supForm" data-a="${s.id}" aria-label="Edit ${esc(s.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="supToggle" data-a="${s.id}" aria-label="${s.active ? "Deactivate" : "Reactivate"} ${esc(s.name)}"><i class="bi bi-arrow-repeat"></i></button>` : ""}</td></tr>`,
+        ),
+        "No suppliers found.",
+      ),
+    foot: pager("sup", L.length),
+  });
 };
 V.suppliers = () =>
   pageHead(
@@ -24,15 +29,19 @@ V.suppliers = () =>
     "Manage supplier information.",
     `<button class="btn btn-primary" data-act="supForm"><i class="bi bi-plus-lg"></i> Add Supplier</button>`,
   ) +
-  `<div class="row g-2 mb-3"><div class="col-md-6">${searchBox("sup.q", "Search supplier name or contact")}</div><div class="col-md-3">${selF(
-    "sup.status",
-    [
-      ["active", "Active"],
-      ["inactive", "Inactive"],
-      ["all", "All"],
-    ],
-    "Status",
-  )}</div></div><div id="res">${RES.sup()}</div>`;
+  toolbar([
+    tbSearch("sup.q", "Search supplier name or contact"),
+    tbSelect(
+      "sup.status",
+      [
+        ["active", "Active"],
+        ["inactive", "Inactive"],
+        ["all", "All"],
+      ],
+      "Status",
+    ),
+  ]) +
+  `<div id="res">${RES.sup()}</div>`;
 A.supView = (id) => {
   const s = supOf(id);
   openPanel(
@@ -126,14 +135,21 @@ RES.cat = () => {
         has(c.name, f.q) &&
         (f.status === "all" || (f.status === "active") === c.active),
     );
-  return `${actionLegend(["edit", "status"])}<div class="card">${tbl(
-    ["Category", "Products", "Status", "Actions"],
-    L.map(
-      (c) =>
-        `<tr><td><b>${esc(c.name)}</b></td><td>${S.products.filter((p) => p.cat === c.id && p.active).length}</td><td>${activePill(c.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-edit" data-act="catForm" data-a="${c.id}" aria-label="Edit ${esc(c.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="catToggle" data-a="${c.id}" aria-label="${c.active ? "Deactivate" : "Reactivate"} ${esc(c.name)}"><i class="bi bi-arrow-repeat"></i></button></td></tr>`,
-    ),
-    "No categories found.",
-  )}</div>`;
+  return dataCard({
+    title: "Category list",
+    meta: `${L.length} categor${L.length === 1 ? "y" : "ies"}`,
+    body:
+      actionLegend(["edit", "status"]) +
+      tbl(
+        ["Category", "Products", "Status", "Actions"],
+        sl(L, "cat").map(
+          (c) =>
+            `<tr><td><b>${esc(c.name)}</b></td><td>${S.products.filter((p) => p.cat === c.id && p.active).length}</td><td>${activePill(c.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-edit" data-act="catForm" data-a="${c.id}" aria-label="Edit ${esc(c.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="catToggle" data-a="${c.id}" aria-label="${c.active ? "Deactivate" : "Reactivate"} ${esc(c.name)}"><i class="bi bi-arrow-repeat"></i></button></td></tr>`,
+        ),
+        "No categories found.",
+      ),
+    foot: pager("cat", L.length),
+  });
 };
 V.categories = () =>
   pageHead(
@@ -141,15 +157,19 @@ V.categories = () =>
     "Categories shown in the Product form are managed here — not hardcoded.",
     `<button class="btn btn-primary" data-act="catForm"><i class="bi bi-plus-lg"></i> Add Category</button>`,
   ) +
-  `<div class="row g-2 mb-3"><div class="col-md-6">${searchBox("cat.q", "Search category")}</div><div class="col-md-3">${selF(
-    "cat.status",
-    [
-      ["active", "Active"],
-      ["inactive", "Inactive"],
-      ["all", "All"],
-    ],
-    "Status",
-  )}</div></div><div id="res">${RES.cat()}</div>`;
+  toolbar([
+    tbSearch("cat.q", "Search category"),
+    tbSelect(
+      "cat.status",
+      [
+        ["active", "Active"],
+        ["inactive", "Inactive"],
+        ["all", "All"],
+      ],
+      "Status",
+    ),
+  ]) +
+  `<div id="res">${RES.cat()}</div>`;
 A.catForm = (id) => {
   if (!guard(isMgr())) return;
   const c = id ? catOf(id) : { name: "" };
@@ -211,7 +231,14 @@ A.catToggle = (id) => {
 V.settings = () =>
   pageHead("Alert Settings", "Set when the system should warn you.") +
   simNote() +
-  `<div class="card p-3 settings-card" style="max-width:640px"><form data-form="saveSettings" novalidate class="row g-3">${fld("se1", "Warn me about expiration this many days ahead", { type: "number", val: S.settings.expWarnDays, col: "col-12", attrs: 'min="1" max="365"', hint: "Used in the Dashboard, Stock Monitoring, and Expiration Monitoring." })}${fld("se2", "Default minimum stock for new products", { type: "number", val: S.settings.defaultMin, col: "col-12", attrs: 'min="0"' })}<div class="col-12"><button class="btn btn-primary">Save Settings</button></div></form></div>`;
+  `<div class="settings-card">` +
+  dataCard({
+    title: "Warning thresholds",
+    meta: "Applies to the whole system",
+    pad: true,
+    body: `<form data-form="saveSettings" novalidate class="row g-3">${fld("se1", "Warn me about expiration this many days ahead", { type: "number", val: S.settings.expWarnDays, col: "col-12", attrs: 'min="1" max="365"', hint: "Used in the Dashboard, Stock Monitoring, and Expiration Monitoring." })}${fld("se2", "Default minimum stock for new products", { type: "number", val: S.settings.defaultMin, col: "col-12", attrs: 'min="0"' })}<div class="col-12"><button class="btn btn-primary">Save Settings</button></div></form>`,
+  }) +
+  `</div>`;
 A.saveSettings = () => {
   if (!guard(isMgr())) return;
   clearErr();
@@ -236,8 +263,18 @@ A.saveSettings = () => {
 V.account = () =>
   pageHead("My Account", "Your profile and preferences.") +
   simNote() +
-  `<div class="row g-3"><div class="col-lg-6"><div class="card p-3"><h2 class="h5">Profile</h2><form data-form="saveProfile" novalidate class="row g-3">${fld("an", "Display name", { val: S.user.name, col: "col-12" })}<div class="col-12 muted">Role: ${ROLE_LABEL[S.user.role]} · Username: ${S.user.username}</div><div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" id="lt" ${S.settings.largeText ? "checked" : ""}><label class="form-check-label" for="lt">Use larger text</label></div><div class="col-12"><button class="btn btn-primary">Save</button></div></form></div></div>
- <div class="col-lg-6"><div class="card p-3"><h2 class="h5">Change password</h2><form data-form="savePw" novalidate class="row g-3">${pw("cp0", "Current password")}${pw("cp1", "New password")}${pw("cp2", "Confirm new password")}<div class="col-12"><button class="btn btn-primary">Change password</button></div></form></div></div></div>`;
+  `<div class="row g-3"><div class="col-lg-6">${dataCard({
+    title: "Profile",
+    meta: ROLE_LABEL[S.user.role],
+    pad: true,
+    body: `<form data-form="saveProfile" novalidate class="row g-3">${fld("an", "Display name", { val: S.user.name, col: "col-12" })}<div class="col-12 muted">Username: <b>${esc(S.user.username)}</b></div><div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" id="lt" ${S.settings.largeText ? "checked" : ""}><label class="form-check-label" for="lt">Use larger text</label></div><div class="col-12"><button class="btn btn-primary">Save</button></div></form>`,
+  })}</div>
+ <div class="col-lg-6">${dataCard({
+    title: "Change password",
+    meta: "Simulated",
+    pad: true,
+    body: `<form data-form="savePw" novalidate class="row g-3">${pw("cp0", "Current password")}${pw("cp1", "New password")}${pw("cp2", "Confirm new password")}<div class="col-12"><button class="btn btn-primary">Change password</button></div></form>`,
+  })}</div></div>`;
 A.saveProfile = () => {
   clearErr();
   if (!check("an", val("an"), "Enter your name.")) return;
@@ -292,14 +329,21 @@ RES.usr = () => {
         (!f.role || u.role === f.role) &&
         (f.status === "all" || (f.status === "active") === u.active),
     );
-  return `<div class="card">${tbl(
-    ["Name", "Username", "Role", "Assigned operations", "Status", "Actions"],
-    L.map(
-      (u) =>
-        `<tr><td><b>${esc(u.name)}</b>${u.id === S.user.id ? ' <span class="small-muted">(you)</span>' : ""}</td><td>${esc(u.username)}</td><td>${ROLE_LABEL[u.role]}</td><td>${esc(opsText(u))}</td><td>${activePill(u.active)}</td><td class="text-nowrap"><button class="btn btn-outline-primary btn-sm" data-act="usrForm" data-a="${u.id}" aria-label="Edit ${esc(u.name)}"><i class="bi bi-pencil-square"></i> Edit</button> <button class="btn btn-outline-secondary btn-sm" data-act="usrToggle" data-a="${u.id}">${u.active ? "Deactivate" : "Reactivate"}</button></td></tr>`,
+  return dataCard({
+    title: "User accounts",
+    meta: `${L.length} account${L.length === 1 ? "" : "s"}`,
+    body:
+      actionLegend(["edit", "status"]) +
+      tbl(
+        ["Name", "Username", "Role", "Assigned operations", "Status", "Actions"],
+      sl(L, "usr").map(
+        (u) =>
+          `<tr><td><b>${esc(u.name)}</b>${u.id === S.user.id ? ' <span class="small-muted">(you)</span>' : ""}</td><td>${esc(u.username)}</td><td>${ROLE_LABEL[u.role]}</td><td>${esc(opsText(u))}</td><td>${activePill(u.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-edit" data-act="usrForm" data-a="${u.id}" aria-label="Edit ${esc(u.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="usrToggle" data-a="${u.id}" aria-label="${u.active ? "Deactivate" : "Reactivate"} ${esc(u.name)}"><i class="bi bi-arrow-repeat"></i></button></td></tr>`,
+      ),
+      "No users found.",
     ),
-    "No users found.",
-  )}</div>`;
+    foot: pager("usr", L.length),
+  });
 };
 V.users = () =>
   pageHead(
@@ -307,24 +351,39 @@ V.users = () =>
     "Accounts are deactivated, never deleted, so records and history are kept.",
     `<button class="btn btn-primary" data-act="usrForm"><i class="bi bi-plus-lg"></i> Add User</button>`,
   ) +
-  `<div class="row g-3 mb-3"><div class="col-md-6"><div class="card p-3 h-100"><b>Administrator / Manager</b><div class="small-muted">Full system management: user accounts, products, suppliers, deliveries, reports, authorized stock adjustments, and audit logs.</div></div></div><div class="col-md-6"><div class="card p-3 h-100"><b>Employee</b><div class="small-muted">Records sales, views product prices and stock, and performs only the inventory operations assigned by a Manager. Roles and permissions can only be changed here.</div></div></div></div>
- <div class="row g-2 mb-3"><div class="col-md-5">${searchBox("usr.q", "Search name or username")}</div><div class="col-md-3">${selF(
-   "usr.role",
-   [
-     ["", "All roles"],
-     ["Manager", "Administrator / Manager"],
-     ["Employee", "Employee"],
-   ],
-   "Role",
- )}</div><div class="col-md-3">${selF(
-   "usr.status",
-   [
-     ["active", "Active"],
-     ["inactive", "Inactive"],
-     ["all", "All"],
-   ],
-   "Status",
- )}</div></div><div id="res">${RES.usr()}</div>`;
+  `<div class="row g-3 mb-3"><div class="col-lg-6">${dataCard({
+    title: "Administrator / Manager",
+    meta: "Full access",
+    pad: true,
+    body: `<div class="small-muted">Full system management: user accounts, products, suppliers, deliveries, reports, authorized stock adjustments, and audit logs.</div>`,
+  })}</div><div class="col-lg-6">${dataCard({
+    title: "Employee",
+    meta: "Limited access",
+    pad: true,
+    body: `<div class="small-muted">Records sales, views product prices and stock, and performs only the inventory operations assigned by a Manager. Roles and permissions can only be changed here.</div>`,
+  })}</div></div>` +
+  toolbar([
+    tbSearch("usr.q", "Search name or username"),
+    tbSelect(
+      "usr.role",
+      [
+        ["", "All roles"],
+        ["Manager", "Administrator / Manager"],
+        ["Employee", "Employee"],
+      ],
+      "Role",
+    ),
+    tbSelect(
+      "usr.status",
+      [
+        ["active", "Active"],
+        ["inactive", "Inactive"],
+        ["all", "All"],
+      ],
+      "Status",
+    ),
+  ]) +
+  `<div id="res">${RES.usr()}</div>`;
 A.usrForm = (id) => {
   if (!guard(isMgr())) return;
   const u = id
@@ -483,14 +542,21 @@ RES.aud = (all) => {
           has(a.user + " " + a.action + " " + a.detail + " " + a.id, f.q),
       )
       .sort((a, b) => b.dt.localeCompare(a.dt));
-  return `<div class="card">${tbl(
-    ["Date & time", "User", "Action", "Details", "Log ID"],
-    (all ? L : sl(L, "aud")).map(
-      (a) =>
-        `<tr><td>${dtfmt(a.dt)}</td><td>${esc(a.user)}</td><td><span class="badge text-bg-light border">${esc(a.action)}</span></td><td>${esc(a.detail)}</td><td class="small-muted">${a.id}</td></tr>`,
+  return dataCard({
+    title: "Activity log",
+    meta: `${L.length} entr${L.length === 1 ? "y" : "ies"}`,
+    body: tbl(
+      ["Date & time", "User", "Action", "Details", "Log ID"],
+      (all ? L : sl(L, "aud")).map(
+        (a) =>
+          `<tr><td>${dtfmt(a.dt)}</td><td>${esc(a.user)}</td><td><span class="badge text-bg-light border">${esc(a.action)}</span></td><td>${esc(a.detail)}</td><td class="small-muted">${a.id}</td></tr>`,
+      ),
+      "No log entries match the filters.",
     ),
-    "No log entries match the filters.",
-  )}${all ? `<div class="small-muted p-3">${L.length} entries</div>` : pager("aud", L.length)}</div>`;
+    foot: all
+      ? `<div class="data-card-foot"><span class="small-muted">${L.length} entries</span></div>`
+      : pager("aud", L.length),
+  });
 };
 V.audit = () => {
   const names = [
@@ -502,7 +568,7 @@ V.audit = () => {
       "Read-only history of important actions. Entries cannot be edited or deleted.",
       `<button class="btn btn-primary" data-act="printAud"><i class="bi bi-printer"></i> Print Logs</button>`,
     ) +
-    `<div class="row g-2 mb-3 no-print"><div class="col-6 col-md-2"><label class="small-muted" for="af">From</label><input id="af" type="date" class="form-control" data-f="aud.from" value="${F.aud.from}"></div><div class="col-6 col-md-2"><label class="small-muted" for="at">To</label><input id="at" type="date" class="form-control" data-f="aud.to" value="${F.aud.to}"></div><div class="col-md-4"><label class="small-muted">User</label>${selF("aud.user", [["", "All users"]].concat(names.map((n) => [n, n])), "User")}</div><div class="col-md-4"><label class="small-muted">Action</label>${selF("aud.type", [["", "All actions"]].concat(AUD_TYPES.map((t) => [t, t])), "Action")}</div><div class="col-12">${searchBox("aud.q", "Search details or log ID")}</div></div><div id="res">${RES.aud()}</div>`
+    `<div class="toolbar no-print" aria-label="Filters"><div class="toolbar-grid">${tbDate("aud.from", "From date")}${tbDate("aud.to", "To date")}${tbSelect("aud.user", [["", "All users"]].concat(names.map((n) => [n, n])), "User")}${tbSelect("aud.type", [["", "All actions"]].concat(AUD_TYPES.map((t) => [t, t])), "Action")}${tbSearch("aud.q", "Search details or log ID")}</div></div><div id="res">${RES.aud()}</div>`
   );
 };
 A.printAud = () => {

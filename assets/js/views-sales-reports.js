@@ -35,7 +35,8 @@ RES.pos = () => {
 };
 const cartHtml = () => {
   const t = cartTotal();
-  return `<div class="card cartbox"><div class="card-h">Current Transaction<button class="btn btn-link btn-sm" data-act="clearCart">Clear cart</button></div><div class="p-3">
+  const items = S.cart.reduce((n, c) => n + c.qty, 0);
+  return `<div class="card cartbox"><div class="card-h"><span class="data-card-title">Current Transaction</span><span class="data-card-meta">${items} item${items === 1 ? "" : "s"}</span><button class="btn btn-link btn-sm" data-act="clearCart">Clear cart</button></div><div class="p-3">
  ${
    S.cart.length
      ? S.cart
@@ -69,26 +70,38 @@ const cartRefresh = () => {
 };
 V.pos = () => {
   const t = F.pos.tab;
-  const tabs = `<div class="mb-3 border-bottom no-print"><button class="tab-btn ${t === "sale" ? "on" : ""}" data-act="tab" data-a="sale">New Sale</button><button class="tab-btn ${t === "history" ? "on" : ""}" data-act="tab" data-a="history">Sales History</button></div>`;
-  if (t === "history")
+  const tabs = `<div class="tab-bar no-print" role="tablist"><button class="tab-btn ${t === "sale" ? "on" : ""}" role="tab" aria-selected="${t === "sale"}" data-act="tab" data-a="sale">New Sale</button><button class="tab-btn ${t === "history" ? "on" : ""}" role="tab" aria-selected="${t === "history"}" data-act="tab" data-a="history">Sales History</button></div>`;
+  if (t === "history") {
+    const L = mySales();
     return (
       pageHead(
         "Sales / POS",
         isMgr() ? "Completed sales (sample data)." : "Your completed sales.",
       ) +
       tabs +
-      `${actionLegend(["view"])}<div class="card">${tbl(
-        ["Reference", "Date & time", "Items", "Total", "Cashier", "Receipt"],
-        mySales().map(
-          (s) =>
-            `<tr><td><b>${s.ref}</b></td><td>${dtfmt(s.dt)}</td><td>${s.lines.reduce((n, l) => n + l.qty, 0)}</td><td>${peso(s.total)}</td><td>${esc(s.user)}</td><td><button class="btn btn-sm table-action action-view" data-act="rcpt" data-a="${s.ref}"><i class="bi bi-eye"></i> View</button></td></tr>`,
-        ),
-      )}</div>`
+      dataCard({
+        title: "Completed sales",
+        meta: `${L.length} sale${L.length === 1 ? "" : "s"}`,
+        body:
+          actionLegend(["view"]) +
+          tbl(
+            ["Reference", "Date & time", "Items", "Total", "Cashier", "Receipt"],
+            L.map(
+              (s) =>
+                `<tr><td><b>${s.ref}</b></td><td>${dtfmt(s.dt)}</td><td>${s.lines.reduce((n, l) => n + l.qty, 0)}</td><td>${peso(s.total)}</td><td>${esc(s.user)}</td><td><button class="btn btn-sm table-action action-view" data-act="rcpt" data-a="${s.ref}"><i class="bi bi-eye"></i> View</button></td></tr>`,
+            ),
+            "No sales recorded yet.",
+          ),
+      })
     );
+  }
   return (
     pageHead("Sales / POS", "Tap a product to add it to the sale.") +
     tabs +
-    `<div class="row g-3"><div class="col-lg-7"><div class="row g-2 mb-3"><div class="col-md-7">${searchBox("pos.q", "Search product name or code")}</div><div class="col-md-5">${selF("pos.cat", catOpts(true), "Category")}</div></div><div id="res">${RES.pos()}</div></div><div class="col-lg-5" id="cart">${cartHtml()}</div></div>`
+    `<div class="row g-3"><div class="col-lg-7">${toolbar([
+      tbSearch("pos.q", "Search product name or code"),
+      tbSelect("pos.cat", catOpts(true), "Category"),
+    ])}<div id="res">${RES.pos()}</div></div><div class="col-lg-5" id="cart">${cartHtml()}</div></div>`
   );
 };
 A.tab = (t) => {
@@ -174,7 +187,11 @@ V.receipt = (r) => {
   const s = S.sales.find((x) => x.ref === r.arg);
   if (!s || (!isMgr() && s.user !== S.user.name))
     return '<div class="alert alert-warning">Sale not found.</div>';
-  return `<div class="text-center mb-3 no-print"><i class="bi bi-check-circle-fill fs-1" style="color:var(--green)"></i><h1>Sale completed</h1><div class="muted">Simulated sale ${s.ref}. Stock on screen has been updated.</div></div>${receiptHtml(s)}
+  return pageHead(
+    "Sale completed",
+    `Reference ${s.ref} · ${dtfmt(s.dt)} · Cashier ${esc(s.user)}`,
+  ) +
+    `<div class="receipt-done no-print"><i class="bi bi-check-circle-fill"></i><div><b>Sale saved successfully</b><div class="small-muted">Stock on screen has been updated (simulated).</div></div></div>${receiptHtml(s)}
  <div class="d-flex justify-content-center gap-2 mt-3 no-print flex-wrap"><button class="btn btn-primary" data-act="printRcpt" data-a="${s.ref}"><i class="bi bi-printer"></i> Print Receipt</button><a class="btn btn-outline-primary" href="#/pos">New Sale</a><a class="btn btn-outline-secondary" href="#/pos?tab=history">Sales History</a></div>`;
 };
 /* ---- Reports ---- */
@@ -444,12 +461,20 @@ function buildReport() {
 RES.rep = (sel) => {
   const R = pickCols(buildReport(), sel),
     f = F.rep;
-  return `<div class="card p-3"><div class="text-center mb-3"><b>Sta. Monica of Bustos Multipurpose Cooperative</b><h2 class="h4 mb-0">${REPORTS[f.type]} Report</h2><div class="muted">${["inventory", "low", "expiration"].includes(f.type) ? "As of " + dfmt(off(0)) : `${f.from ? dfmt(f.from) : "Start"} to ${f.to ? dfmt(f.to) : "today"}`} · Generated by ${esc(S.user.name)} · Sample data</div></div>
- <div class="row g-2 mb-3">${R.sum.map(([k, v]) => `<div class="col-6 col-md-3"><div class="border rounded p-2"><div class="small-muted">${k}</div><b class="fs-5">${v}</b></div></div>`).join("")}</div>${tbl(
-   R.cols,
-   R.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`),
-   "No data for these filters.",
- )}</div>`;
+  const period = ["inventory", "low", "expiration"].includes(f.type)
+    ? "As of " + dfmt(off(0))
+    : `${f.from ? dfmt(f.from) : "Start"} to ${f.to ? dfmt(f.to) : "today"}`;
+  return dataCard({
+    title: REPORTS[f.type] + " Report",
+    meta: `${R.rows.length} row${R.rows.length === 1 ? "" : "s"}`,
+    cls: "report-card",
+    body: `<div class="report-masthead"><div class="rm-org">Sta. Monica of Bustos Multipurpose Cooperative</div><div class="rm-title">${REPORTS[f.type]} Report</div><div class="rm-meta">${period} · Generated by ${esc(S.user.name)} · Sample data</div></div>
+  ${R.sum.length ? `<div class="report-sums">${R.sum.map(([k, v]) => `<div class="report-sum"><small>${k}</small><b>${v}</b></div>`).join("")}</div>` : ""}${tbl(
+      R.cols,
+      R.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`),
+      "No data for these filters.",
+    )}`,
+  });
 };
 V.reports = () =>
   pageHead(
@@ -457,13 +482,19 @@ V.reports = () =>
     "Choose a report, set filters, then print.",
     `<button class="btn btn-primary" data-act="printRep"><i class="bi bi-printer"></i> Print Report</button><button class="btn btn-outline-primary" data-act="exportRep"><i class="bi bi-file-earmark-arrow-down"></i> Export to CSV</button>`,
   ) +
-  `<div class="d-flex flex-wrap gap-2 mb-3 no-print">${Object.entries(REPORTS)
+  `<div class="report-types no-print">${Object.entries(REPORTS)
     .map(
       ([k, v]) =>
         `<button class="repcard ${F.rep.type === k ? "on" : ""}" data-act="repType" data-a="${k}">${v}</button>`,
     )
-    .join("")}</div>
- <div class="row g-2 mb-3 no-print"><div class="col-6 col-md-2"><label class="small-muted" for="rf">From</label><input id="rf" type="date" class="form-control" data-f="rep.from" value="${F.rep.from}"></div><div class="col-6 col-md-2"><label class="small-muted" for="rt">To</label><input id="rt" type="date" class="form-control" data-f="rep.to" value="${F.rep.to}"></div><div class="col-md-4"><label class="small-muted">Category</label>${selF("rep.cat", catOpts(true), "Category")}</div><div class="col-md-4"><label class="small-muted">Search</label>${searchBox("rep.q", "Search in report")}</div></div><div id="res">${RES.rep()}</div>`;
+    .join("")}</div>` +
+  toolbar([
+    tbDate("rep.from", "From date"),
+    tbDate("rep.to", "To date"),
+    tbSelect("rep.cat", catOpts(true), "Category"),
+    tbSearch("rep.q", "Search in report"),
+  ]) +
+  `<div id="res">${RES.rep()}</div>`;
 A.repType = (t) => {
   F.rep.type = t;
   refresh();

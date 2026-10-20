@@ -65,25 +65,37 @@ RES.inv = () => {
         (!f.cat || p.cat == f.cat) &&
         showMatch(p, f.show),
     );
-  return `${actionLegend(["view"])}<div class="card">${tbl(
-    [
-      "Product",
-      "Category",
-      "Available Stock",
-      "Minimum Stock",
-      "Expiration Date",
-      "Action",
-    ],
-    sl(L, "inv").map(
-      (p) =>
-        `<tr><td><b>${esc(p.name)}</b><div class="small-muted">${p.code}</div></td><td>${esc(catName(p.cat))}</td><td>${stockPill(p)}</td><td>${p.min}</td><td>${expCell(p)}</td><td><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button></td></tr>`,
-    ),
-    "No products match your search.",
-  )}${pager("inv", L.length)}</div>`;
+  return dataCard({
+    title: "Stock on hand",
+    meta: `${L.length} product${L.length === 1 ? "" : "s"}`,
+    body:
+      actionLegend(["view"]) +
+      tbl(
+        [
+          "Product",
+          "Category",
+          "Available Stock",
+          "Minimum Stock",
+          "Expiration Date",
+          "Action",
+        ],
+        sl(L, "inv").map(
+          (p) =>
+            `<tr><td><b>${esc(p.name)}</b><div class="small-muted">${p.code}</div></td><td>${esc(catName(p.cat))}</td><td>${stockPill(p)}</td><td>${p.min}</td><td>${expCell(p)}</td><td><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button></td></tr>`,
+        ),
+        "No products match your search.",
+      ),
+    foot: pager("inv", L.length),
+  });
 };
 V.inventory = () =>
   pageHead("Stock Monitoring", "Check available stock and expiration dates.") +
-  `<div class="row g-2 mb-3"><div class="col-md-5">${searchBox("inv.q", "Search product name or code")}</div><div class="col-md-3">${selF("inv.cat", catOpts(true), "Category")}</div><div class="col-md-4">${selF("inv.show", showOpts, "Show")}</div></div><div id="res">${RES.inv()}</div>`;
+  toolbar([
+    tbSearch("inv.q", "Search product name or code"),
+    tbSelect("inv.cat", catOpts(true), "Category"),
+    tbSelect("inv.show", showOpts, "Stock Status"),
+  ]) +
+  `<div id="res">${RES.inv()}</div>`;
 /* ---- Products ---- */
 RES.prod = () => {
   const f = F.prod,
@@ -100,14 +112,21 @@ RES.prod = () => {
     m ? ["Cost"] : [],
     ["Price", "In stock", "Min. stock", "Actions"],
   );
-  return `${actionLegend(["view", ...(m ? ["edit", "status"] : [])])}<div class="card">${tbl(
-    heads,
-    L.map(
-      (p) =>
-        `<tr><td>${p.code}</td><td><b>${esc(p.name)}</b><div class="small-muted">${p.unit}</div>${p.active ? "" : activePill(0)}</td><td>${esc(catName(p.cat))}</td><td>${p.type}</td>${m ? `<td>${peso(p.cost)}</td>` : ""}<td>${peso(p.price)}</td><td>${stockPill(p)}</td><td>${p.min}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button>${m ? ` <button class="btn btn-sm table-action action-edit" data-act="prodForm" data-a="${p.id}" aria-label="Edit ${esc(p.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="prodToggle" data-a="${p.id}" aria-label="${p.active ? "Deactivate" : "Reactivate"} ${esc(p.name)}"><i class="bi bi-arrow-repeat"></i></button>` : ""}</td></tr>`,
-    ),
-    "No products found.",
-  )}<div class="small-muted p-3">${L.length} products</div></div>`;
+  return dataCard({
+    title: "Product list",
+    meta: `${L.length} product${L.length === 1 ? "" : "s"}`,
+    body:
+      actionLegend(["view", ...(m ? ["edit", "status"] : [])]) +
+      tbl(
+        heads,
+        sl(L, "prod").map(
+          (p) =>
+            `<tr><td>${p.code}</td><td><b>${esc(p.name)}</b><div class="small-muted">${p.unit}</div>${p.active ? "" : activePill(0)}</td><td>${esc(catName(p.cat))}</td><td>${p.type}</td>${m ? `<td>${peso(p.cost)}</td>` : ""}<td>${peso(p.price)}</td><td>${stockPill(p)}</td><td>${p.min}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button>${m ? ` <button class="btn btn-sm table-action action-edit" data-act="prodForm" data-a="${p.id}" aria-label="Edit ${esc(p.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="prodToggle" data-a="${p.id}" aria-label="${p.active ? "Deactivate" : "Reactivate"} ${esc(p.name)}"><i class="bi bi-arrow-repeat"></i></button>` : ""}</td></tr>`,
+        ),
+        "No products found.",
+      ),
+    foot: pager("prod", L.length),
+  });
 };
 V.products = () =>
   pageHead(
@@ -119,17 +138,20 @@ V.products = () =>
       ? `<button class="btn btn-primary" data-act="prodForm"><i class="bi bi-plus-lg"></i> Add Product</button>`
       : "",
   ) +
-  `<div class="row g-2 mb-3"><div class="col-md-4">${searchBox("prod.q", "Search name or code")}</div><div class="col-md-3">${selF("prod.cat", catOpts(true), "Category")}</div><div class="col-md-3">${selF(
-    "prod.type",
-    [
-      ["", "All types"],
-      ["Perishable", "Perishable"],
-      ["Non-Perishable", "Non-Perishable"],
-    ],
-    "Type",
-  )}</div>${
+  toolbar([
+    tbSearch("prod.q", "Search name or code"),
+    tbSelect("prod.cat", catOpts(true), "Category"),
+    tbSelect(
+      "prod.type",
+      [
+        ["", "All types"],
+        ["Perishable", "Perishable"],
+        ["Non-Perishable", "Non-Perishable"],
+      ],
+      "Product Type",
+    ),
     isMgr()
-      ? `<div class="col-md-2">${selF(
+      ? tbSelect(
           "prod.status",
           [
             ["active", "Active"],
@@ -137,9 +159,9 @@ V.products = () =>
             ["all", "All"],
           ],
           "Status",
-        )}</div>`
-      : ""
-  }</div><div id="res">${RES.prod()}</div>`;
+        )
+      : "",
+  ]) + `<div id="res">${RES.prod()}</div>`;
 A.prodForm = (id) => {
   /* Employees with the "Add new products" operation may add; only Managers may edit existing ones. */
   if (!guard(isMgr() || (!id && hasOp("products")))) return;
@@ -257,52 +279,78 @@ RES.exp = () => {
         (!s || expState(b.exp) === s),
     )
     .sort((a, b) => a.exp.localeCompare(b.exp));
-  return `${actionLegend(["view", ...(hasOp("spoilage") ? ["spoilage"] : [])])}<div class="card">${tbl(
-    [
-      "Product",
-      "Batch",
-      "Qty",
-      "Arrival date",
-      "Expiration date",
-      "Remaining",
-      "Supplier",
-      "Actions",
-    ],
-    L.map((b) => {
-      const p = prod(b.pid);
-      return `<tr><td><b>${esc(p.name)}</b></td><td>${b.ref}</td><td>${b.qty}</td><td>${dfmt(b.arr)}</td><td>${dfmt(b.exp)}</td><td>${expBadge(b.exp)}</td><td>${b.sup ? esc(supOf(b.sup).name) : "—"}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button> ${hasOp("spoilage") ? `<button class="btn btn-sm table-action action-record" data-act="spoilForm" data-a="Spoilage" data-b="${b.id}" aria-label="Record spoilage for ${esc(p.name)}"><i class="bi bi-exclamation-triangle"></i></button>` : ""}</td></tr>`;
-    }),
-    "No products near expiration.",
-  )}</div>`;
+  return dataCard({
+    title: "Batches to watch",
+    meta: `${L.length} batch${L.length === 1 ? "" : "es"}`,
+    body:
+      actionLegend(["view", ...(hasOp("spoilage") ? ["spoilage"] : [])]) +
+      tbl(
+        [
+          "Product",
+          "Batch",
+          "Qty",
+          "Arrival date",
+          "Expiration date",
+          "Remaining",
+          "Supplier",
+          "Actions",
+        ],
+        sl(L, "exp").map((b) => {
+          const p = prod(b.pid);
+          return `<tr><td><b>${esc(p.name)}</b><div class="small-muted">${p.code}</div></td><td>${b.ref}</td><td>${b.qty}</td><td>${dfmt(b.arr)}</td><td>${dfmt(b.exp)}</td><td>${expBadge(b.exp)}</td><td>${b.sup ? esc(supOf(b.sup).name) : "—"}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button> ${hasOp("spoilage") ? `<button class="btn btn-sm table-action action-record" data-act="spoilForm" data-a="Spoilage" data-b="${b.id}" aria-label="Record spoilage for ${esc(p.name)}"><i class="bi bi-exclamation-triangle"></i></button>` : ""}</td></tr>`;
+        }),
+        "No products near expiration.",
+      ),
+    foot: pager("exp", L.length),
+  });
 };
 V.expiration = () =>
   pageHead(
     "Expiration Monitoring",
     `Showing batches that expire within ${S.settings.expWarnDays} days, and expired batches.`,
   ) +
-  `<div class="row g-2 mb-3"><div class="col-md-4">${selF(
-    "exp.show",
-    [
-      ["", "Near expiration and expired"],
-      ["soon", "Near expiration only"],
-      ["expired", "Expired only"],
-    ],
-    "Filter",
-  )}</div></div><div id="res">${RES.exp()}</div>`;
+  toolbar([
+    tbSelect(
+      "exp.show",
+      [
+        ["", "Near expiration and expired"],
+        ["soon", "Near expiration only"],
+        ["expired", "Expired only"],
+      ],
+      "Expiration Status",
+    ),
+  ]) +
+  `<div id="res">${RES.exp()}</div>`;
 /* ---- Deliveries ---- */
+RES.del = () => {
+  const f = F.del,
+    L = S.deliveries.filter((d) =>
+      has(d.ref + " " + supOf(d.sup).name, f.q),
+    );
+  return dataCard({
+    title: "Delivery records",
+    meta: `${L.length} ${L.length === 1 ? "delivery" : "deliveries"}`,
+    body:
+      actionLegend(["view"]) +
+      tbl(
+        ["Reference", "Date", "Supplier", "Items", "Total cost", "Action"],
+        sl(L, "del").map(
+          (d) =>
+            `<tr><td><b>${d.ref}</b></td><td>${dfmt(d.date)}</td><td>${esc(supOf(d.sup).name)}</td><td>${d.lines.length}</td><td>${peso(d.lines.reduce((s, l) => s + l.qty * l.cost, 0))}</td><td><button class="btn btn-sm table-action action-view" data-act="delView" data-a="${d.ref}" aria-label="View delivery ${d.ref}"><i class="bi bi-eye"></i></button></td></tr>`,
+        ),
+        "No deliveries recorded yet.",
+      ),
+    foot: pager("del", L.length),
+  });
+};
 V.deliveries = () =>
   pageHead(
     "Deliveries",
     "Record stock received from suppliers.",
     `<button class="btn btn-primary" data-act="newDel"><i class="bi bi-plus-lg"></i> New Delivery</button>`,
   ) +
-  `${actionLegend(["view"])}<div class="card">${tbl(
-    ["Reference", "Date", "Supplier", "Items", "Total cost", "Action"],
-    S.deliveries.map(
-      (d) =>
-        `<tr><td><b>${d.ref}</b></td><td>${dfmt(d.date)}</td><td>${esc(supOf(d.sup).name)}</td><td>${d.lines.length}</td><td>${peso(d.lines.reduce((s, l) => s + l.qty * l.cost, 0))}</td><td><button class="btn btn-sm table-action action-view" data-act="delView" data-a="${d.ref}" aria-label="View delivery ${d.ref}"><i class="bi bi-eye"></i></button></td></tr>`,
-    ),
-  )}</div>`;
+  toolbar([tbSearch("del.q", "Search reference or supplier")]) +
+  `<div id="res">${RES.del()}</div>`;
 A.delView = (ref) => {
   const d = S.deliveries.find((x) => x.ref === ref);
   openPanel(
@@ -363,11 +411,16 @@ V["delivery-new"] = () => {
       `<a class="btn btn-outline-secondary" href="#/deliveries">Cancel</a>`,
     ) +
     simNote("Saving updates the sample stock on screen only.") +
-    `<div class="card p-3"><div id="dlErr" role="alert"></div><div class="row g-3 mb-3">
+    dataCard({
+      title: "Delivery details",
+      meta: "Fields marked * are required",
+      pad: true,
+      body: `<div id="dlErr" role="alert"></div><div class="row g-3 mb-3">
  ${fld("dsup", "Supplier", { val: d.sup, opts: [["", "Select supplier"]].concat(S.suppliers.filter((s) => s.active).map((s) => [s.id, s.name])), attrs: 'data-dl="sup"', col: "col-md-4" })}${fld("dref", "Delivery reference", { val: d.ref, attrs: 'data-dl="ref"', col: "col-md-4" })}${fld("ddate", "Delivery date", { type: "date", val: d.date, attrs: 'data-dl="date"', col: "col-md-4" })}${fld("dnotes", "Notes", { type: "textarea", val: d.notes, req: false, attrs: 'data-dl="notes"', col: "col-12" })}</div>
  <div class="table-responsive"><table class="table"><thead><tr><th>Product</th><th>Quantity</th><th>Unit cost (₱)</th><th>Expiration date</th><th class="text-end">Line total</th><th></th></tr></thead><tbody id="lines">${dlLines()}</tbody></table></div>
  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><button class="btn btn-outline-primary" data-act="delLineAdd"><i class="bi bi-plus-lg"></i> Add item</button><div class="fs-5">Total: <b id="dlTotal">${peso(dlSum())}</b></div></div>
- <div class="text-end mt-3"><button class="btn btn-primary" data-act="delSave">Save Delivery</button></div></div>`
+ <div class="text-end mt-3"><button class="btn btn-primary" data-act="delSave">Save Delivery</button></div>`,
+    })
   );
 };
 A.delLineAdd = () => {
@@ -443,24 +496,29 @@ A.delSave = () => {
 RES.spo = () => {
   const k = F.spo.kind,
     L = S.spoilage.filter((s) => !k || s.kind === k);
-  return `<div class="card">${tbl(
-    [
-      "ID",
-      "Date",
-      "Type",
-      "Product",
-      "Qty",
-      "Reason",
-      "Condition",
-      "Sale ref",
-      "Disposition",
-    ],
-    L.map(
-      (s) =>
-        `<tr><td>${s.id}</td><td>${dfmt(s.date)}</td><td>${s.kind}</td><td>${esc(prod(s.pid).name)}</td><td>${s.qty}</td><td>${esc(s.reason)}</td><td>${esc(s.cond)}</td><td>${s.saleRef || "—"}</td><td>${s.disp}</td></tr>`,
+  return dataCard({
+    title: "Spoilage and return records",
+    meta: `${L.length} record${L.length === 1 ? "" : "s"}`,
+    body: tbl(
+      [
+        "ID",
+        "Date",
+        "Type",
+        "Product",
+        "Qty",
+        "Reason",
+        "Condition",
+        "Sale ref",
+        "Disposition",
+      ],
+      sl(L, "spo").map(
+        (s) =>
+          `<tr><td><b>${s.id}</b></td><td>${dfmt(s.date)}</td><td>${s.kind}</td><td>${esc(prod(s.pid).name)}</td><td>${s.qty}</td><td>${esc(s.reason)}</td><td>${esc(s.cond)}</td><td>${s.saleRef || "—"}</td><td>${s.disp}</td></tr>`,
+      ),
+      "No records yet.",
     ),
-    "No records.",
-  )}</div>`;
+    foot: pager("spo", L.length),
+  });
 };
 V.spoilage = () =>
   pageHead(
@@ -468,15 +526,18 @@ V.spoilage = () =>
     "Record spoiled or returned products.",
     `<button class="btn btn-primary" data-act="spoilForm" data-a="Spoilage"><i class="bi bi-plus-lg"></i> Record Spoilage</button><button class="btn btn-outline-primary" data-act="spoilForm" data-a="Return"><i class="bi bi-arrow-return-left"></i> Record Return</button>`,
   ) +
-  `<div class="row g-2 mb-3"><div class="col-md-4">${selF(
-    "spo.kind",
-    [
-      ["", "Spoilage and returns"],
-      ["Spoilage", "Spoilage only"],
-      ["Return", "Returns only"],
-    ],
-    "Type",
-  )}</div></div><div id="res">${RES.spo()}</div>`;
+  toolbar([
+    tbSelect(
+      "spo.kind",
+      [
+        ["", "Spoilage and returns"],
+        ["Spoilage", "Spoilage only"],
+        ["Return", "Returns only"],
+      ],
+      "Record Type",
+    ),
+  ]) +
+  `<div id="res">${RES.spo()}</div>`;
 A.spoilForm = (kind, batchId) => {
   if (!guard(hasOp("spoilage"))) return;
   const b = batchId ? S.batches.find((x) => x.id == batchId) : null,
@@ -592,22 +653,27 @@ RES.mov = () => {
           (!f.type || m.type === f.type),
       )
       .sort((a, b) => b.dt.localeCompare(a.dt));
-  return `<div class="card">${tbl(
-    [
-      "Date & time",
-      "Product",
-      "Movement",
-      "Qty",
-      "Reference",
-      "User",
-      "Reason",
-    ],
-    sl(L, "mov").map(
-      (m) =>
-        `<tr><td>${dtfmt(m.dt)}</td><td>${esc(prod(m.pid).name)}</td><td>${m.type} <span class="small-muted">(${m.qty > 0 ? "stock in" : m.qty < 0 ? "stock out" : "no change"})</span></td><td><b>${m.qty > 0 ? "+" : ""}${m.qty}</b></td><td>${m.ref || "—"}</td><td>${esc(m.user)}</td><td>${esc(m.reason) || "—"}</td></tr>`,
+  return dataCard({
+    title: "Movement log",
+    meta: `${L.length} movement${L.length === 1 ? "" : "s"}`,
+    body: tbl(
+      [
+        "Date & time",
+        "Product",
+        "Movement",
+        "Qty",
+        "Reference",
+        "User",
+        "Reason",
+      ],
+      sl(L, "mov").map(
+        (m) =>
+          `<tr><td>${dtfmt(m.dt)}</td><td>${esc(prod(m.pid).name)}</td><td>${m.type} <span class="small-muted">(${m.qty > 0 ? "stock in" : m.qty < 0 ? "stock out" : "no change"})</span></td><td><b>${m.qty > 0 ? "+" : ""}${m.qty}</b></td><td>${m.ref || "—"}</td><td>${esc(m.user)}</td><td>${esc(m.reason) || "—"}</td></tr>`,
+      ),
+      "No movements match the filters.",
     ),
-    "No movements match the filters.",
-  )}${pager("mov", L.length)}</div>`;
+    foot: pager("mov", L.length),
+  });
 };
 V.movements = () =>
   pageHead(
@@ -617,7 +683,21 @@ V.movements = () =>
       ? `<button class="btn btn-primary" data-act="adjForm"><i class="bi bi-plus-slash-minus"></i> Record Adjustment</button>`
       : "",
   ) +
-  `<div class="row g-2 mb-3"><div class="col-6 col-md-2"><label class="small-muted" for="mf">From</label><input id="mf" type="date" class="form-control" data-f="mov.from" value="${F.mov.from}"></div><div class="col-6 col-md-2"><label class="small-muted" for="mt">To</label><input id="mt" type="date" class="form-control" data-f="mov.to" value="${F.mov.to}"></div><div class="col-md-4"><label class="small-muted">Product</label>${selF("mov.pid", [["", "All products"]].concat(S.products.map((p) => [p.id, p.name])), "Product")}</div><div class="col-md-4"><label class="small-muted">Movement type</label>${selF("mov.type", [["", "All types"]].concat(movTypes.map((t) => [t, t])), "Movement type")}</div></div><div id="res">${RES.mov()}</div>`;
+  toolbar([
+    tbDate("mov.from", "From date"),
+    tbDate("mov.to", "To date"),
+    tbSelect(
+      "mov.pid",
+      [["", "All products"]].concat(S.products.map((p) => [p.id, p.name])),
+      "Product",
+    ),
+    tbSelect(
+      "mov.type",
+      [["", "All types"]].concat(movTypes.map((t) => [t, t])),
+      "Movement Type",
+    ),
+  ]) +
+  `<div id="res">${RES.mov()}</div>`;
 A.adjForm = () => {
   if (!guard(hasOp("adjust"))) return;
   modal({

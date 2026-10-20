@@ -21,40 +21,58 @@ const ROUTE_RULE = {
   audit: "mgr",
 };
 const NAV = [
-  ["dashboard", "Dashboard", "grid-1x2"],
-  ["products", "Products", "box-seam"],
   {
-    key: "inv",
-    label: "Inventory",
-    icon: "clipboard-data",
-    kids: [
-      ["inventory", "Stock Monitoring"],
-      ["deliveries", "Deliveries"],
-      ["expiration", "Expiration Monitoring"],
-      ["spoilage", "Spoilage and Returns"],
-      ["movements", "Stock Movements"],
+    label: "Overview",
+    items: [["dashboard", "Dashboard", "grid-1x2"]],
+  },
+  {
+    label: "Operations",
+    items: [
+      ["products", "Products", "box-seam"],
+      {
+        key: "inv",
+        label: "Inventory",
+        icon: "clipboard-data",
+        kids: [
+          ["inventory", "Stock Monitoring"],
+          ["deliveries", "Deliveries"],
+          ["expiration", "Expiration Monitoring"],
+          ["spoilage", "Spoilage and Returns"],
+          ["movements", "Stock Movements"],
+        ],
+      },
+      ["pos", "Sales / POS", "cart3"],
     ],
   },
-  ["pos", "Sales / POS", "cart3"],
-  ["suppliers", "Suppliers", "truck"],
-  ["reports", "Reports", "file-earmark-bar-graph"],
   {
-    key: "adm",
+    label: "Management",
+    items: [
+      ["suppliers", "Suppliers", "truck"],
+      ["reports", "Reports", "file-earmark-bar-graph"],
+    ],
+  },
+  {
     label: "Administration",
-    icon: "shield-check",
-    kids: [
-      ["users", "User Accounts"],
-      ["audit", "Audit Logs"],
-    ],
-  },
-  {
-    key: "set",
-    label: "Settings",
-    icon: "gear",
-    kids: [
-      ["categories", "Categories"],
-      ["settings", "Alert Settings"],
-      ["account", "My Account"],
+    items: [
+      {
+        key: "adm",
+        label: "Administration",
+        icon: "shield-check",
+        kids: [
+          ["users", "User Accounts"],
+          ["audit", "Audit Logs"],
+        ],
+      },
+      {
+        key: "set",
+        label: "Settings",
+        icon: "gear",
+        kids: [
+          ["categories", "Categories"],
+          ["settings", "Alert Settings"],
+          ["account", "My Account"],
+        ],
+      },
     ],
   },
 ];
@@ -70,6 +88,7 @@ const RK = {
   reports: "rep",
   users: "usr",
   audit: "aud",
+  deliveries: "del",
 };
 Object.assign(DEF, {
   inv: { q: "", cat: "", show: "" },
@@ -83,6 +102,7 @@ Object.assign(DEF, {
   rep: { type: "inventory", from: off(-30), to: off(0), cat: "", q: "" },
   usr: { q: "", role: "", status: "active" },
   aud: { from: "", to: "", user: "", type: "", q: "" },
+  del: { q: "" },
 });
 Object.keys(DEF).forEach((k) => {
   F[k] = { ...DEF[k] };
@@ -97,14 +117,19 @@ const allowed = (r) => {
   if (rule === "mgr") return isMgr();
   return hasOp(rule);
 };
-const navItems = () =>
-  NAV.map((n) =>
-    n.kids
-      ? { ...n, kids: n.kids.filter((k) => allowed(k[0])) }
-      : allowed(n[0])
-        ? n
-        : null,
-  ).filter((n) => n && (!n.kids || n.kids.length));
+const navSections = () =>
+  NAV.map((sec) => ({
+    label: sec.label,
+    items: sec.items
+      .map((n) =>
+        n.kids
+          ? { ...n, kids: n.kids.filter((k) => allowed(k[0])) }
+          : allowed(n[0])
+            ? n
+            : null,
+      )
+      .filter((n) => n && (!n.kids || n.kids.length)),
+  })).filter((sec) => sec.items.length);
 const activeId = (r) =>
   r === "delivery-new" ? "deliveries" : r === "receipt" ? "pos" : r;
 function parse() {
@@ -117,25 +142,6 @@ function parse() {
     q: Object.fromEntries(new URLSearchParams(q || "")),
   };
 }
-const TITLES = {
-  dashboard: "Dashboard",
-  products: "Products",
-  inventory: "Stock Monitoring",
-  deliveries: "Deliveries",
-  "delivery-new": "New Delivery",
-  expiration: "Expiration Monitoring",
-  spoilage: "Spoilage and Returns",
-  movements: "Stock Movements",
-  pos: "Sales / POS",
-  receipt: "Sale Receipt",
-  suppliers: "Suppliers",
-  reports: "Reports",
-  categories: "Categories",
-  settings: "Alert Settings",
-  account: "My Account",
-  users: "User Accounts",
-  audit: "Audit Logs",
-};
 const alerts = () => {
   const ps = S.products.filter((p) => p.active);
   return {
@@ -149,36 +155,107 @@ const alerts = () => {
     ).length,
   };
 };
+const navBadge = (route) => {
+  const al = alerts();
+  if (route === "inventory") return { n: al.low + al.out, cls: "danger" };
+  if (route === "expiration") return { n: al.soon + al.exp, cls: "warn" };
+  return { n: 0, cls: "" };
+};
+const badgeHtml = (route) => {
+  const b = navBadge(route);
+  return b.n ? `<span class="nv-badge ${b.cls}">${b.n}</span>` : "";
+};
+const subLink = (k, act) => {
+  const cur = act === k[0];
+  return `<a class="nv ${cur ? "active" : ""}" href="#/${k[0]}" ${
+    cur ? 'aria-current="page"' : ""
+  } data-tip="${esc(k[1])}"><span class="lbl">${esc(k[1])}</span>${badgeHtml(
+    k[0],
+  )}</a>`;
+};
+function navHtml(r) {
+  const act = activeId(r);
+  return navSections()
+    .map((sec) => {
+      const items = sec.items
+        .map((n) => {
+          if (n.kids) {
+            const open =
+              (S.open && S.open[n.key]) ||
+              n.kids.some((k) => k[0] === act);
+            return `<div class="grp ${open ? "open" : ""}"><button class="nv" data-act="grp" data-a="${
+              n.key
+            }" aria-expanded="${open}" data-tip="${esc(n.label)}"><i class="bi bi-${
+              n.icon
+            } nv-ic"></i><span class="lbl">${esc(
+              n.label,
+            )}</span><i class="bi bi-chevron-down chev"></i></button><div class="sub">${n.kids
+              .map((k) => subLink(k, act))
+              .join("")}</div></div>`;
+          }
+          const cur = act === n[0];
+          return `<a class="nv ${cur ? "active" : ""}" href="#/${n[0]}" ${
+            cur ? 'aria-current="page"' : ""
+          } data-tip="${esc(n[1])}"><i class="bi bi-${n[2]} nv-ic"></i><span class="lbl">${esc(
+            n[1],
+          )}</span>${badgeHtml(n[0])}</a>`;
+        })
+        .join("");
+      return `<div class="sb-sec"><div class="sb-section">${esc(
+        sec.label,
+      )}</div>${items}</div>`;
+    })
+    .join("");
+}
 function shell() {
   const r = ROUTE,
-    u = S.user,
-    al = alerts(),
-    tot = al.low + al.out + al.soon + al.exp;
-  const nav = navItems()
-    .map((n) =>
-      n.kids
-        ? `<div class="grp ${(S.open && S.open[n.key]) || n.kids.some((k) => k[0] === activeId(r)) ? "open" : ""}"><button class="nv" data-act="grp" data-a="${n.key}" aria-expanded="false"><i class="bi bi-${n.icon}"></i><span>${n.label}</span><i class="bi bi-chevron-down chev"></i></button><div class="sub">${n.kids.map((k) => `<a class="nv ${activeId(r) === k[0] ? "active" : ""}" href="#/${k[0]}" ${activeId(r) === k[0] ? 'aria-current="page"' : ""}><span>${k[1]}</span></a>`).join("")}</div></div>`
-        : `<a class="nv ${activeId(r) === n[0] ? "active" : ""}" href="#/${n[0]}" ${activeId(r) === n[0] ? 'aria-current="page"' : ""}><i class="bi bi-${n[2]}"></i><span>${n[1]}</span></a>`,
-    )
-    .join("");
-  return `<aside class="sidebar${u.role === "Manager" ? " manager" : ""}" aria-label="Main navigation"><div class="sb-brand">${brandLogo("brand-logo")}<div><b>Sta. Monica of Bustos</b><small>Multipurpose Cooperative</small></div></div>
- <nav class="sb-nav">${nav}</nav>
- <div class="sb-user dropup"><button class="nv" data-bs-toggle="dropdown" aria-label="Account menu"><span class="avatar">${u.name
-   .split(" ")
-   .map((w) => w[0])
-   .slice(0, 2)
-   .join(
-     "",
-   )}</span><span class="uinfo"><b class="d-block">${esc(u.name)}</b><small>${ROLE_LABEL[u.role]}</small></span></button>
- <ul class="dropdown-menu"><li><a class="dropdown-item" href="#/account">My Account</a></li><li><button class="dropdown-item" data-act="logout">Log out</button></li></ul></div></aside>
- <div class="sb-backdrop" data-act="drawer"></div>
- <div class="main"><header class="topbar no-print"><button class="btn topbar-icon" data-act="drawer" aria-label="Toggle navigation"><i class="bi bi-list"></i></button>
- <strong class="me-auto fs-5">${TITLES[r] || ""}</strong><span class="muted d-none d-md-inline">${dfmt(off(0))}</span>
- <div class="dropdown"><button class="btn topbar-icon position-relative" data-bs-toggle="dropdown" aria-label="Alerts, ${tot} items need attention"><i class="bi bi-bell"></i>${tot ? `<span class="badge rounded-pill text-bg-danger position-absolute top-0 start-100 translate-middle">${tot}</span>` : ""}</button>
- <ul class="dropdown-menu dropdown-menu-end"><li class="dropdown-header">Needs attention</li>
- <li><a class="dropdown-item" href="#/inventory?show=low">${al.low} low-stock products</a></li><li><a class="dropdown-item" href="#/inventory?show=out">${al.out} out-of-stock products</a></li>
- <li><a class="dropdown-item" href="#/expiration?show=soon">${al.soon} batches expiring soon</a></li><li><a class="dropdown-item" href="#/expiration?show=expired">${al.exp} expired batches</a></li></ul></div></header>
- <main class="content" id="view" tabindex="-1"></main></div>`;
+    u = S.user;
+  const nav = navHtml(r);
+  const expanded =
+    innerWidth >= 992
+      ? !document.body.classList.contains("sb-collapsed")
+      : document.body.classList.contains("sb-open");
+  const toggleLabel =
+    innerWidth >= 992
+      ? expanded
+        ? "Collapse navigation"
+        : "Expand navigation"
+      : expanded
+        ? "Close navigation"
+        : "Open navigation";
+  const all = buildNotifications();
+  const unread = all.filter((n) => !notifIsRead(n.id)).length;
+  const bell = `<button class="btn topbar-icon position-relative ${
+    unread ? "has-alerts" : ""
+  }" id="notifBell" data-act="notifOpen" aria-haspopup="dialog" aria-expanded="false" aria-label="Notifications, ${
+    unread
+  } item${unread === 1 ? "" : "s"} need attention"><i class="bi bi-bell"></i>${
+    unread
+      ? `<span class="notif-count" id="notifBellCount">${unread}</span>`
+      : ""
+  }</button>`;
+  return `<aside class="sidebar${u.role === "Manager" ? " manager" : ""}" aria-label="Main navigation"><div class="sb-brand">${brandLogo(
+    "brand-logo",
+  )}<div class="sb-brand-text"><b>Sta. Monica of Bustos</b><small>Multipurpose Cooperative</small></div></div>
+  <div class="sb-controls"><span class="sb-controls-label lbl">Menu</span><button class="btn sb-control-btn sb-menu-toggle" data-act="drawer" aria-label="${toggleLabel}" aria-expanded="${expanded}"><i class="bi bi-list sb-toggle-ic sb-ic-menu"></i><i class="bi bi-chevron-double-right sb-toggle-ic sb-ic-expand"></i><i class="bi bi-x-lg sb-toggle-ic sb-ic-close"></i></button></div>
+  <nav class="sb-nav">${nav}</nav>
+  <div class="sb-user dropup"><button class="nv" data-bs-toggle="dropdown" aria-label="Account menu"><span class="avatar">${u.name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join(
+      "",
+    )}</span><span class="uinfo lbl"><b class="d-block">${esc(u.name)}</b><small>${
+      ROLE_LABEL[u.role]
+    }</small></span></button>
+  <ul class="dropdown-menu"><li><a class="dropdown-item" href="#/account">My Account</a></li><li><button class="dropdown-item" data-act="logout">Log out</button></li></ul></div></aside>
+  <div class="sb-backdrop" data-act="drawer"></div>
+  <button class="btn sb-control-btn mobile-nav-toggle" data-act="drawer" aria-label="${toggleLabel}" aria-expanded="${expanded}"><i class="bi bi-list sb-toggle-ic sb-ic-menu"></i><i class="bi bi-x-lg sb-toggle-ic sb-ic-close"></i></button>
+  <div class="main">
+  <header class="topbar no-print">${crumbsHtml(r)}<div class="topbar-right"><span class="topbar-date d-none d-md-inline">${dfmt(
+    off(0),
+  )}</span>${bell}</div></header>
+  <main class="content" id="view" tabindex="-1"></main></div>`;
 }
 function render() {
   const r = parse();
@@ -224,6 +301,10 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("input", (e) => {
   const t = e.target;
+  if (t.dataset.nf) {
+    notifQuery = t.value;
+    renderNotif();
+  }
   if (t.dataset.f) {
     const [k, f] = t.dataset.f.split(".");
     F[k][f] = t.value;
@@ -259,16 +340,49 @@ A.page = (k, n) => {
   $("#res").innerHTML = RES[k]();
 };
 A.grp = (k, _, t) => {
-  document.body.classList.remove("sb-collapsed");
-  S.open = S.open || {};
   const g = t.closest(".grp");
-  g.classList.toggle("open");
+  const wasCollapsed = document.body.classList.contains("sb-collapsed");
+  if (wasCollapsed) {
+    /* expanding from the rail: restore the full sidebar and reveal the group */
+    document.body.classList.remove("sb-collapsed");
+    g.classList.add("open");
+    syncDrawerState();
+  } else {
+    g.classList.toggle("open");
+  }
+  S.open = S.open || {};
   S.open[k] = g.classList.contains("open");
+  g.querySelector(".nv").setAttribute("aria-expanded", String(S.open[k]));
 };
+function syncDrawerState() {
+  const mobile = innerWidth < 992;
+  const expanded = mobile
+    ? document.body.classList.contains("sb-open")
+    : !document.body.classList.contains("sb-collapsed");
+  const label = mobile
+    ? expanded
+      ? "Close navigation"
+      : "Open navigation"
+    : expanded
+      ? "Collapse navigation"
+      : "Expand navigation";
+  $$(".sb-menu-toggle, .mobile-nav-toggle").forEach((button) => {
+    button.setAttribute("aria-expanded", String(expanded));
+    button.setAttribute("aria-label", label);
+  });
+}
 A.drawer = () => {
   if (innerWidth < 992) document.body.classList.toggle("sb-open");
   else document.body.classList.toggle("sb-collapsed");
+  syncDrawerState();
+  const tip = $("#sbTip");
+  if (tip) tip.classList.remove("show");
 };
+window.addEventListener("resize", () => {
+  syncDrawerState();
+  const tip = $("#sbTip");
+  if (tip) tip.classList.remove("show");
+});
 A.logout = () =>
   confirmBox(
     "Log out?",
@@ -283,5 +397,199 @@ A.logout = () =>
     },
     "Log out",
   );
+/* ===== Notification panel (Facebook-style dropdown under the bell) ===== */
+let notifFilter = "all";
+let notifQuery = "";
+const NOTIF_TABS = [
+  { k: "all", label: "All" },
+  { k: "unread", label: "Unread" },
+  { k: "stock", label: "Stock" },
+  { k: "expiry", label: "Expiry" },
+];
+function notifFiltered(all) {
+  const q = notifQuery.trim().toLowerCase();
+  return all.filter((n) => {
+    if (notifFilter === "stock" && n.cat !== "stock") return false;
+    if (notifFilter === "expiry" && n.cat !== "expiry") return false;
+    if (notifFilter === "unread" && notifIsRead(n.id)) return false;
+    if (q) {
+      const hay = (n.title + " " + n.desc + " " + n.chips.join(" ")).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+const notifItem = (n) => {
+  const sev = NOTIF_SEV[n.sev];
+  const unread = !notifIsRead(n.id);
+  return `<li class="nf-item sev-${n.sev}${unread ? " unread" : ""}" data-act="notifItem" data-a="${n.id}">
+  <span class="nf-avatar"><i class="bi bi-${sev.icon}" aria-hidden="true"></i></span>
+  <div class="nf-body">
+    <div class="nf-line"><span class="nf-text">${esc(n.title)}</span><span class="nf-time">${esc(n.time)}</span></div>
+    <div class="nf-sub">${esc(n.desc)}</div>
+    <div class="nf-foot-row">${n.chips
+      .map((c) => `<span class="nf-chip">${esc(c)}</span>`)
+      .join("")}<a class="nf-link" href="${n.route}" data-act="notifItem" data-a="${
+      n.id
+    }" data-b="1">${esc(n.action)} <i class="bi bi-chevron-right" aria-hidden="true"></i></a></div>
+  </div>
+</li>`;
+};
+function renderNotif() {
+  const all = buildNotifications();
+  const list = notifFiltered(all);
+  const unread = all.filter((n) => !notifIsRead(n.id)).length;
+  const counts = {
+    all: all.length,
+    unread,
+    stock: all.filter((n) => n.cat === "stock").length,
+    expiry: all.filter((n) => n.cat === "expiry").length,
+  };
+  $("#notifTabs").innerHTML = NOTIF_TABS.map(
+    (t) =>
+      `<button class="notif-tab ${
+        notifFilter === t.k ? "on" : ""
+      }" type="button" role="tab" aria-selected="${
+        notifFilter === t.k
+      }" data-act="notifFilter" data-a="${t.k}">${t.label}<span class="notif-tab-count">${counts[
+        t.k
+      ]}</span></button>`,
+  ).join("");
+  $("#notifList").innerHTML = list.length
+    ? `<ul class="list-unstyled mb-0">${list.map(notifItem).join("")}</ul>`
+    : `<div class="nf-empty"><i class="bi bi-bell-slash" aria-hidden="true"></i><b>${
+        all.length ? "No notifications found" : "You're all caught up"
+      }</b><div class="small-muted mt-1">${
+        all.length
+          ? "Try another tab or clear the search box."
+          : "Every item is within its thresholds. Nothing needs attention."
+      }</div></div>`;
+  $("#notifTitle").textContent = unread
+    ? `Notifications (${unread})`
+    : "Notifications";
+  const markAll = $('[data-act="notifReadAll"]');
+  if (markAll) markAll.disabled = unread === 0;
+}
+function updateBell() {
+  const btn = $("#notifBell");
+  if (!btn) return;
+  const all = buildNotifications();
+  const unread = all.filter((n) => !notifIsRead(n.id)).length;
+  let b = $("#notifBellCount");
+  if (unread) {
+    if (!b) {
+      b = document.createElement("span");
+      b.id = "notifBellCount";
+      b.className = "notif-count";
+      btn.appendChild(b);
+    }
+    b.textContent = unread;
+    btn.classList.add("has-alerts");
+  } else {
+    if (b) b.remove();
+    btn.classList.remove("has-alerts");
+  }
+  btn.setAttribute(
+    "aria-label",
+    `Notifications, ${unread} item${unread === 1 ? "" : "s"} need attention`,
+  );
+}
+/* ---- open / close with a smooth ease-in / ease-out ---- */
+const notifPanel = () => $("#notifPanel");
+function placeNotif() {
+  const panel = notifPanel(),
+    bell = $("#notifBell");
+  if (!panel || !bell) return;
+  const r = bell.getBoundingClientRect();
+  const w = panel.offsetWidth || 384;
+  let left = r.right - w;
+  left = Math.max(10, Math.min(left, innerWidth - w - 10));
+  panel.style.left = left + "px";
+  panel.style.top = Math.round(r.bottom + 8) + "px";
+}
+function openNotif() {
+  const panel = notifPanel();
+  if (!panel) return;
+  renderNotif();
+  placeNotif();
+  panel.classList.add("open");
+  panel.setAttribute("aria-hidden", "false");
+  $("#notifScrim").classList.add("show");
+  const bell = $("#notifBell");
+  if (bell) {
+    bell.classList.add("is-open");
+    bell.setAttribute("aria-expanded", "true");
+  }
+}
+function closeNotif() {
+  const panel = notifPanel();
+  if (!panel || !panel.classList.contains("open")) return;
+  panel.classList.remove("open");
+  panel.setAttribute("aria-hidden", "true");
+  $("#notifScrim").classList.remove("show");
+  const bell = $("#notifBell");
+  if (bell) {
+    bell.classList.remove("is-open");
+    bell.setAttribute("aria-expanded", "false");
+  }
+}
+A.notifOpen = () => {
+  const panel = notifPanel();
+  if (panel && panel.classList.contains("open")) closeNotif();
+  else openNotif();
+};
+A.notifClose = () => closeNotif();
+A.notifFilter = (k) => {
+  notifFilter = k;
+  renderNotif();
+};
+A.notifItem = (id, close) => {
+  notifMarkRead(id);
+  updateBell();
+  /* when the row links somewhere, close first and leave the list untouched so
+     the browser still follows the link */
+  if (close) return closeNotif();
+  renderNotif();
+};
+A.notifReadAll = () => {
+  buildNotifications().forEach((n) => notifMarkRead(n.id));
+  renderNotif();
+  updateBell();
+  toast("All notifications marked as read.", "info");
+};
+A.notifSeeAll = () => {
+  closeNotif();
+  location.hash = "#/inventory";
+};
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeNotif();
+});
+window.addEventListener("resize", () => {
+  if (notifPanel() && notifPanel().classList.contains("open")) placeNotif();
+});
+window.addEventListener("scroll", () => {
+  if (notifPanel() && notifPanel().classList.contains("open")) placeNotif();
+}, true);
+/* ===== Collapsed-rail tooltip (floating, never clipped by the sidebar) ===== */
+const sbTip = () => $("#sbTip");
+document.addEventListener("mouseover", (e) => {
+  const t = e.target.closest(".sidebar .nv[data-tip]");
+  const tip = sbTip();
+  if (!t || !tip) return;
+  if (innerWidth < 992 || !document.body.classList.contains("sb-collapsed"))
+    return;
+  const r = t.getBoundingClientRect();
+  tip.textContent = t.dataset.tip;
+  tip.style.left = `${r.right + 12}px`;
+  tip.style.top = `${Math.max(8, r.top + r.height / 2 - 16)}px`;
+  tip.classList.add("show");
+});
+document.addEventListener("mouseout", (e) => {
+  const t = e.target.closest(".sidebar .nv[data-tip]");
+  const tip = sbTip();
+  if (!t || !tip) return;
+  if (e.relatedTarget && t.contains(e.relatedTarget)) return;
+  tip.classList.remove("show");
+});
 document.documentElement.classList.toggle("large", S.settings.largeText);
 render();
