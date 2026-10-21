@@ -58,7 +58,7 @@ V.dashboard = () => {
     pageHead("Dashboard", `Welcome back, ${esc(S.user.name.split(" ")[0])}!`) +
     `<div class="row g-3 mb-4">
  ${card("products", "box-seam", ps.length, "Active products")}${card("inventory?show=low", "exclamation-triangle", al.low, "Low stock", "low")}${card("inventory?show=out", "x-octagon", al.out, "Out of stock", "low")}
- ${card("expiration?show=soon", "hourglass-split", al.soon, "Expiring soon", "soon") + card("expiration?show=expired", "x-circle", al.exp, "Expired batches", "low")}${card("pos?tab=history", "cash-coin", peso(amt), `${isMgr() ? "Today's sales" : "My sales today"} (${today.length})`)}</div>
+ ${card("inventory?show=soon", "hourglass-split", al.soon, "Expiring soon", "soon") + card("inventory?show=expired", "x-circle", al.exp, "Expired batches", "low")}${card("pos?tab=history", "cash-coin", peso(amt), `${isMgr() ? "Today's sales" : "My sales today"} (${today.length})`)}</div>
  <div class="row g-3"><div class="col-lg-${K ? 12 : 6}">${dataCard({
       title: "Recent Sales",
       meta: `${mySales().length} sale${mySales().length === 1 ? "" : "s"}`,

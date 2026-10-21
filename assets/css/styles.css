@@ -354,7 +354,9 @@ p {
   display: flex;
   flex-direction: column;
   z-index: 1040;
-  overflow: hidden;
+  /* NOT hidden: the account menu has to be able to float out of the
+     76px collapsed rail. Every row that must be clipped clips itself. */
+  overflow: visible;
   box-shadow: 2px 0 20px rgba(12, 45, 85, 0.18);
   transition:
     width 0.34s var(--sb-ease),
@@ -634,9 +636,20 @@ p {
   }
 }
 .sb-user {
+  position: relative;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding: 0.7rem;
   background: rgba(0, 0, 0, 0.08);
+}
+/* The account menu is placed by CSS (the toggle uses
+   data-bs-display="static"), otherwise Popper squeezes it back inside the
+   collapsed rail and the sidebar used to cut "My Account" in half. */
+.sb-user .dropdown-menu {
+  position: absolute;
+  inset: auto 0 100% auto;
+  margin: 0 0 0.4rem;
+  min-width: 11.5rem;
+  z-index: 1060;
 }
 .sb-user .nv {
   padding: 0.45rem;
@@ -680,6 +693,8 @@ p {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+  white-space: nowrap;
 }
 .sb-control-btn {
   position: relative;
@@ -939,6 +954,11 @@ p {
   body.sb-collapsed .sb-sec > a.nv.active::after,
   body.sb-collapsed .grp > .nv.active::after {
     display: none;
+  }
+  /* the account menu opens out of the rail, to the right of the avatar */
+  body.sb-collapsed .sb-user .dropdown-menu {
+    inset: auto auto 100% 100%;
+    margin: 0 0 0.4rem 0.4rem;
   }
 }
 @media (max-width: 991.98px) {

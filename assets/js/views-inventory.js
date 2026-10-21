@@ -267,60 +267,6 @@ A.prodToggle = (id) => {
     p.active,
   );
 };
-/* ---- Expiration Monitoring ---- */
-RES.exp = () => {
-  const s = F.exp.show;
-  const L = S.batches
-    .filter(
-      (b) =>
-        b.qty > 0 &&
-        b.exp &&
-        ["soon", "expired"].includes(expState(b.exp)) &&
-        (!s || expState(b.exp) === s),
-    )
-    .sort((a, b) => a.exp.localeCompare(b.exp));
-  return dataCard({
-    title: "Batches to watch",
-    meta: `${L.length} batch${L.length === 1 ? "" : "es"}`,
-    body:
-      actionLegend(["view", ...(hasOp("spoilage") ? ["spoilage"] : [])]) +
-      tbl(
-        [
-          "Product",
-          "Batch",
-          "Qty",
-          "Arrival date",
-          "Expiration date",
-          "Remaining",
-          "Supplier",
-          "Actions",
-        ],
-        sl(L, "exp").map((b) => {
-          const p = prod(b.pid);
-          return `<tr><td><b>${esc(p.name)}</b><div class="small-muted">${p.code}</div></td><td>${b.ref}</td><td>${b.qty}</td><td>${dfmt(b.arr)}</td><td>${dfmt(b.exp)}</td><td>${expBadge(b.exp)}</td><td>${b.sup ? esc(supOf(b.sup).name) : "—"}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button> ${hasOp("spoilage") ? `<button class="btn btn-sm table-action action-record" data-act="spoilForm" data-a="Spoilage" data-b="${b.id}" aria-label="Record spoilage for ${esc(p.name)}"><i class="bi bi-exclamation-triangle"></i></button>` : ""}</td></tr>`;
-        }),
-        "No products near expiration.",
-      ),
-    foot: pager("exp", L.length),
-  });
-};
-V.expiration = () =>
-  pageHead(
-    "Expiration Monitoring",
-    `Showing batches that expire within ${S.settings.expWarnDays} days, and expired batches.`,
-  ) +
-  toolbar([
-    tbSelect(
-      "exp.show",
-      [
-        ["", "Near expiration and expired"],
-        ["soon", "Near expiration only"],
-        ["expired", "Expired only"],
-      ],
-      "Expiration Status",
-    ),
-  ]) +
-  `<div id="res">${RES.exp()}</div>`;
 /* ---- Deliveries ---- */
 RES.del = () => {
   const f = F.del,

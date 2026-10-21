@@ -236,7 +236,7 @@ V.settings = () =>
     title: "Warning thresholds",
     meta: "Applies to the whole system",
     pad: true,
-    body: `<form data-form="saveSettings" novalidate class="row g-3">${fld("se1", "Warn me about expiration this many days ahead", { type: "number", val: S.settings.expWarnDays, col: "col-12", attrs: 'min="1" max="365"', hint: "Used in the Dashboard, Stock Monitoring, and Expiration Monitoring." })}${fld("se2", "Default minimum stock for new products", { type: "number", val: S.settings.defaultMin, col: "col-12", attrs: 'min="0"' })}<div class="col-12"><button class="btn btn-primary">Save Settings</button></div></form>`,
+    body: `<form data-form="saveSettings" novalidate class="row g-3">${fld("se1", "Warn me about expiration this many days ahead", { type: "number", val: S.settings.expWarnDays, col: "col-12", attrs: 'min="1" max="365"', hint: "Used in the Dashboard and Stock Monitoring." })}${fld("se2", "Default minimum stock for new products", { type: "number", val: S.settings.defaultMin, col: "col-12", attrs: 'min="0"' })}<div class="col-12"><button class="btn btn-primary">Save Settings</button></div></form>`,
   }) +
   `</div>`;
 A.saveSettings = () => {

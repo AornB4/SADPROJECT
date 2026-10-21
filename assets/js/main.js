@@ -5,7 +5,6 @@ const ROUTE_RULE = {
   dashboard: "all",
   products: "all",
   inventory: "all",
-  expiration: "all",
   movements: "all",
   pos: "all",
   receipt: "all",
@@ -36,7 +35,6 @@ const NAV = [
         kids: [
           ["inventory", "Stock Monitoring"],
           ["deliveries", "Deliveries"],
-          ["expiration", "Expiration Monitoring"],
           ["spoilage", "Spoilage and Returns"],
           ["movements", "Stock Movements"],
         ],
@@ -83,7 +81,6 @@ const RK = {
   suppliers: "sup",
   pos: "pos",
   movements: "mov",
-  expiration: "exp",
   spoilage: "spo",
   reports: "rep",
   users: "usr",
@@ -97,7 +94,6 @@ Object.assign(DEF, {
   sup: { q: "", status: "active" },
   pos: { q: "", cat: "", tab: "sale" },
   mov: { from: "", to: "", pid: "", type: "" },
-  exp: { show: "" },
   spo: { kind: "" },
   rep: { type: "inventory", from: off(-30), to: off(0), cat: "", q: "" },
   usr: { q: "", role: "", status: "active" },
@@ -158,7 +154,6 @@ const alerts = () => {
 const navBadge = (route) => {
   const al = alerts();
   if (route === "inventory") return { n: al.low + al.out, cls: "danger" };
-  if (route === "expiration") return { n: al.soon + al.exp, cls: "warn" };
   return { n: 0, cls: "" };
 };
 const badgeHtml = (route) => {
@@ -239,7 +234,7 @@ function shell() {
   )}<div class="sb-brand-text"><b>Sta. Monica of Bustos</b><small>Multipurpose Cooperative</small></div></div>
   <div class="sb-controls"><span class="sb-controls-label lbl">Menu</span><button class="btn sb-control-btn sb-menu-toggle" data-act="drawer" aria-label="${toggleLabel}" aria-expanded="${expanded}"><i class="bi bi-list sb-toggle-ic sb-ic-menu"></i><i class="bi bi-chevron-double-right sb-toggle-ic sb-ic-expand"></i><i class="bi bi-x-lg sb-toggle-ic sb-ic-close"></i></button></div>
   <nav class="sb-nav">${nav}</nav>
-  <div class="sb-user dropup"><button class="nv" data-bs-toggle="dropdown" aria-label="Account menu"><span class="avatar">${u.name
+  <div class="sb-user dropup" data-bs-display="static"><button class="nv" data-bs-toggle="dropdown" data-bs-display="static" aria-label="Account menu"><span class="avatar">${u.name
     .split(" ")
     .map((w) => w[0])
     .slice(0, 2)

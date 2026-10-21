@@ -33,7 +33,8 @@ Add Category (Settings › Categories) → Products › Add Product shows it imm
 - Collapsing animates: sidebar width, content offset, label fade/slide, section headers, active-item accent, chevron rotation and staggered sub-menu reveal.
 - Collapsed rail shows icons only; hovering an item shows a floating tooltip with its name, and the live alert badges move onto the icons.
 - Clicking a group icon in the collapsed rail restores the full sidebar and opens that group.
-- The rail is grouped into Overview / Operations / Management / Administration; Stock Monitoring and Expiration Monitoring carry live alert badges.
+- The rail is grouped into Overview / Operations / Management / Administration; Stock Monitoring carries the live low/out-of-stock badge.
+- The account menu at the bottom of the rail opens above the avatar and is never cut off — in the collapsed rail it opens out to the right of the icons instead of being squeezed into the 76 px rail.
 
 ## Notification panel (bell icon, top right)
 - Facebook-style **dropdown panel** anchored under the bell icon — no full-screen modal, the page stays visible behind it. It opens and closes with a smooth ease-in / ease-out (fade + lift + scale) and animates the bell to an active state.

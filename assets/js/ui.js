@@ -346,7 +346,7 @@ function buildNotifications() {
         )} and expires on ${dfmt(b.exp)}. Sell it, return it to the supplier or record spoilage.`,
         chips: [b.ref, catName(p.cat)],
         time: dfmt(b.exp),
-        route: "#/expiration?show=soon",
+        route: "#/inventory?show=soon",
         action: "Review batch",
       });
     });
@@ -367,7 +367,7 @@ function buildNotifications() {
         )} still on hand. It can no longer be sold — record spoilage to clear it.`,
         chips: [b.ref, catName(p.cat)],
         time: dfmt(b.exp),
-        route: "#/expiration?show=expired",
+        route: "#/inventory?show=expired",
         action: "Record spoilage",
       });
     });

@@ -202,7 +202,7 @@ const REPORTS = {
   sales: "Sales Summary",
   salesd: "Detailed Sales Transactions",
   deliveries: "Deliveries",
-  expiration: "Expiration Monitoring",
+  expiration: "Near-Expiry List",
   spoilage: "Spoilage and Returns",
 };
 function buildReport() {
