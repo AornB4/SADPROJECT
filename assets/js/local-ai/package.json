@@ -1,0 +1,16 @@
+{
+  "name": "sta-monica-local-inventory-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local-only inventory assistant API for the Sta. Monica web prototype",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

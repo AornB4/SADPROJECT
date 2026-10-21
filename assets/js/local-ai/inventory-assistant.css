@@ -1,0 +1,55 @@
+/* Sta. Monica Inventory Assistant theme: navy blue, cooperative blue, white, and pale blue.
+   Styles are namespaced so the assistant does not change the rest of the application. */
+#smia-root, #smia-root * { box-sizing: border-box; }
+#smia-root { position: fixed; z-index: 1055; right: 24px; bottom: 22px; font-family: inherit; color: #18324f; }
+#smia-root[hidden], #smia-panel[hidden], #smia-launcher[hidden] { display: none !important; }
+
+/* Floating launcher matches the dashboard's navy-blue navigation and primary buttons. */
+.smia-launcher { display: flex; align-items: center; gap: 10px; border: 1px solid #174b83; border-radius: 999px; padding: 11px 17px 11px 12px; color: #fff; background: #1d568f; box-shadow: 0 8px 28px #123b6638; font: inherit; font-weight: 700; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+.smia-launcher:hover { background: #17477b; transform: translateY(-2px); box-shadow: 0 12px 32px #123b6648; }
+.smia-launcher:focus-visible, .smia-close:focus-visible, .smia-form button:focus-visible, .smia-quick button:focus-visible { outline: 3px solid #8fc3ff; outline-offset: 2px; }
+.smia-launcher-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #ffffff45; border-radius: 50%; background: #ffffff20; font-size: 21px; }
+
+/* Main chat window */
+.smia-panel { position: absolute; right: 0; bottom: 0; display: flex; flex-direction: column; width: min(390px, calc(100vw - 28px)); height: min(610px, calc(100vh - 36px)); min-height: 420px; overflow: hidden; border: 1px solid #d8e3f0; border-radius: 20px; background: #fff; box-shadow: 0 20px 70px #163b6438; }
+.smia-header { display: flex; align-items: center; gap: 11px; padding: 17px 16px; color: #fff; background: linear-gradient(120deg, #17477b, #2367a7); }
+.smia-avatar { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border: 1px solid #ffffff50; border-radius: 13px; background: #ffffff18; font-size: 23px; }
+.smia-heading { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
+.smia-heading strong { font-size: 15px; line-height: 1.2; }
+.smia-heading span { display: flex; align-items: center; gap: 6px; color: #e0efff; font-size: 11px; }
+.smia-status-dot { width: 7px; height: 7px; border-radius: 50%; background: #8ee6ad; box-shadow: 0 0 0 3px #8ee6ad25; }
+.smia-close { width: 32px; height: 32px; border: 0; border-radius: 9px; color: #fff; background: #ffffff18; font-size: 25px; line-height: 1; cursor: pointer; }
+.smia-close:hover { background: #ffffff2b; }
+
+/* Informational strip and chat history */
+.smia-local-note { display: flex; align-items: center; gap: 8px; padding: 9px 15px; color: #315b83; background: #edf5fd; border-bottom: 1px solid #dce8f5; font-size: 11px; }
+.smia-local-note span { font-size: 14px; }
+.smia-messages { display: flex; flex: 1; flex-direction: column; gap: 13px; overflow-y: auto; padding: 17px 14px 10px; background: #f7f9fc; }
+.smia-message { display: flex; max-width: 94%; flex-direction: column; gap: 5px; }
+.smia-bot { align-self: flex-start; }
+.smia-user { align-self: flex-end; align-items: flex-end; }
+.smia-bubble { padding: 11px 13px; border: 1px solid #dce5ef; border-radius: 14px 14px 14px 4px; color: #243b55; background: #fff; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.smia-user .smia-bubble { border-color: #1d568f; border-radius: 14px 14px 4px 14px; color: #fff; background: #1d568f; }
+.smia-message time { padding: 0 3px; color: #7d8da0; font-size: 10px; }
+.smia-thinking .smia-bubble { color: #647b93; background: #f0f5fb; }
+
+/* Suggested questions */
+.smia-quick { display: flex; flex-wrap: wrap; gap: 7px; padding: 7px 13px 11px; background: #f7f9fc; }
+.smia-quick[hidden] { display: none; }
+.smia-quick button { padding: 7px 9px; border: 1px solid #cadbed; border-radius: 10px; color: #1e568b; background: #fff; font: inherit; font-size: 11px; text-align: left; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.smia-quick button:hover { border-color: #4d8bc8; background: #edf5fd; }
+
+/* Input area */
+.smia-form { display: flex; align-items: flex-end; gap: 8px; padding: 11px 12px; border-top: 1px solid #dfe8f2; background: #fff; }
+.smia-form textarea { flex: 1; max-height: 100px; min-height: 42px; resize: vertical; padding: 11px 12px; border: 1px solid #cfdeed; border-radius: 12px; outline: none; color: #18324f; background: #f8fafd; font: inherit; font-size: 13px; line-height: 1.4; }
+.smia-form textarea::placeholder { color: #7a8da3; }
+.smia-form textarea:focus { border-color: #4b8bc9; box-shadow: 0 0 0 3px #2874b51a; background: #fff; }
+.smia-form textarea:disabled { opacity: .65; }
+.smia-form button { display: grid; flex: 0 0 42px; place-items: center; height: 42px; border: 0; border-radius: 12px; color: #fff; background: #1d568f; font-size: 24px; cursor: pointer; transition: background .15s ease; }
+.smia-form button:hover:not(:disabled) { background: #17477b; }
+.smia-form button:disabled { opacity: .55; cursor: wait; }
+.smia-footer { padding: 0 13px 10px; color: #7d8da0; background: #fff; font-size: 10px; line-height: 1.4; text-align: center; }
+.smia-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+@media (max-width: 480px) { #smia-root { right: 12px; bottom: 12px; } .smia-panel { width: calc(100vw - 24px); height: min(650px, calc(100dvh - 24px)); } .smia-launcher { padding-right: 13px; } }
+@media (prefers-reduced-motion: reduce) { .smia-launcher { transition: none; } }
