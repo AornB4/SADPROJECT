@@ -325,15 +325,15 @@ const dlLines = () =>
     .map((l, i) => {
       const p = prod(l.pid),
         per = p && p.type === "Perishable";
-      return `<tr><td style="min-width:200px"><select class="form-select" aria-label="Product" data-dll="${i}.pid"><option value="">Select product</option>${S.products
+      return `<tr><td><select class="form-select" aria-label="Product" data-dll="${i}.pid" style="width:100%;min-width:170px"><option value="">Select product</option>${S.products
         .filter((p) => p.active)
         .map(
           (p) =>
             `<option value="${p.id}" ${p.id == l.pid ? "selected" : ""}>${esc(p.name)}</option>`,
         )
         .join("")}</select></td>
- <td><input class="form-control" type="number" min="1" aria-label="Quantity received" data-dll="${i}.qty" value="${l.qty}" style="width:90px"></td><td><input class="form-control" type="number" min="0" step="0.01" aria-label="Unit cost" data-dll="${i}.cost" value="${l.cost}" style="width:110px"></td>
- <td><input class="form-control" type="date" aria-label="Expiration date" data-dll="${i}.exp" value="${l.exp}" ${per ? "" : "disabled"} style="width:160px">${per ? "" : '<div class="small-muted">Not needed</div>'}</td><td class="text-end">${peso((+l.qty || 0) * (+l.cost || 0))}</td><td><button class="btn btn-outline-secondary btn-sm" data-act="delLineRm" data-a="${i}" aria-label="Remove line"><i class="bi bi-trash"></i></button></td></tr>`;
+ <td><input class="form-control" type="number" min="1" aria-label="Quantity received" data-dll="${i}.qty" value="${l.qty}" style="width:100%;min-width:80px"></td><td><input class="form-control" type="number" min="0" step="0.01" aria-label="Unit cost" data-dll="${i}.cost" value="${l.cost}" style="width:100%;min-width:90px"></td>
+ <td><input class="form-control" type="date" aria-label="Expiration date" data-dll="${i}.exp" value="${l.exp}" ${per ? "" : "disabled"} style="width:100%;min-width:150px">${per ? "" : '<div class="small-muted">Not needed</div>'}</td><td class="text-end">${peso((+l.qty || 0) * (+l.cost || 0))}</td><td><button class="btn btn-outline-secondary btn-sm" data-act="delLineRm" data-a="${i}" aria-label="Remove line"><i class="bi bi-trash"></i></button></td></tr>`;
     })
     .join("");
 const dlSum = () =>
@@ -363,7 +363,7 @@ V["delivery-new"] = () => {
       pad: true,
       body: `<div id="dlErr" role="alert"></div><div class="row g-3 mb-3">
  ${fld("dsup", "Supplier", { val: d.sup, opts: [["", "Select supplier"]].concat(S.suppliers.filter((s) => s.active).map((s) => [s.id, s.name])), attrs: 'data-dl="sup"', col: "col-md-4" })}${fld("dref", "Delivery reference", { val: d.ref, attrs: 'data-dl="ref"', col: "col-md-4" })}${fld("ddate", "Delivery date", { type: "date", val: d.date, attrs: 'data-dl="date"', col: "col-md-4" })}${fld("dnotes", "Notes", { type: "textarea", val: d.notes, req: false, attrs: 'data-dl="notes"', col: "col-12" })}</div>
- <div class="table-responsive"><table class="table"><thead><tr><th>Product</th><th>Quantity</th><th>Unit cost (₱)</th><th>Expiration date</th><th class="text-end">Line total</th><th></th></tr></thead><tbody id="lines">${dlLines()}</tbody></table></div>
+ <div class="table-responsive"><table class="table"><colgroup><col style="width:30%"><col style="width:13%"><col style="width:16%"><col style="width:21%"><col style="width:13%"><col style="width:7%"></colgroup><thead><tr><th>Product</th><th>Quantity</th><th>Unit cost (₱)</th><th>Expiration date</th><th class="text-end">Line total</th><th></th></tr></thead><tbody id="lines">${dlLines()}</tbody></table></div>
  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><button class="btn btn-outline-primary" data-act="delLineAdd"><i class="bi bi-plus-lg"></i> Add item</button><div class="fs-5">Total: <b id="dlTotal">${peso(dlSum())}</b></div></div>
  <div class="text-end mt-3"><button class="btn btn-primary" data-act="delSave">Save Delivery</button></div>`,
     })

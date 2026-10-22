@@ -175,10 +175,11 @@ function navHtml(r) {
       const items = sec.items
         .map((n) => {
           if (n.kids) {
-            const open =
-              (S.open && S.open[n.key]) ||
-              n.kids.some((k) => k[0] === act);
-            return `<div class="grp ${open ? "open" : ""}"><button class="nv" data-act="grp" data-a="${
+            const kidActive = n.kids.some((k) => k[0] === act);
+            const open = (S.open && S.open[n.key]) || kidActive;
+            return `<div class="grp ${open ? "open" : ""}${
+              kidActive ? " grp-active" : ""
+            }"><button class="nv" data-act="grp" data-a="${
               n.key
             }" aria-expanded="${open}" data-tip="${esc(n.label)}"><i class="bi bi-${
               n.icon
@@ -224,11 +225,7 @@ function shell() {
     unread ? "has-alerts" : ""
   }" id="notifBell" data-act="notifOpen" aria-haspopup="dialog" aria-expanded="false" aria-label="Notifications, ${
     unread
-  } item${unread === 1 ? "" : "s"} need attention"><i class="bi bi-bell"></i>${
-    unread
-      ? `<span class="notif-count" id="notifBellCount">${unread}</span>`
-      : ""
-  }</button>`;
+  } item${unread === 1 ? "" : "s"} need attention"><i class="bi bi-bell"></i></button>`;
   return `<aside class="sidebar${u.role === "Manager" ? " manager" : ""}" aria-label="Main navigation"><div class="sb-brand">${brandLogo(
     "brand-logo",
   )}<div class="sb-brand-text"><b>Sta. Monica of Bustos</b><small>Multipurpose Cooperative</small></div></div>
@@ -470,20 +467,9 @@ function updateBell() {
   if (!btn) return;
   const all = buildNotifications();
   const unread = all.filter((n) => !notifIsRead(n.id)).length;
-  let b = $("#notifBellCount");
-  if (unread) {
-    if (!b) {
-      b = document.createElement("span");
-      b.id = "notifBellCount";
-      b.className = "notif-count";
-      btn.appendChild(b);
-    }
-    b.textContent = unread;
-    btn.classList.add("has-alerts");
-  } else {
-    if (b) b.remove();
-    btn.classList.remove("has-alerts");
-  }
+  /* no count badge on the bell (the reference has none) — the unread
+     count is shown in the panel title and in the "Unread" tab */
+  btn.classList.toggle("has-alerts", unread > 0);
   btn.setAttribute(
     "aria-label",
     `Notifications, ${unread} item${unread === 1 ? "" : "s"} need attention`,

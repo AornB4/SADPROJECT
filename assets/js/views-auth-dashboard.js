@@ -52,16 +52,17 @@ V.dashboard = () => {
     today = mySales().filter((s) => s.dt.startsWith(off(0))),
     amt = today.reduce((s, x) => s + x.total, 0);
   const card = (href, icon, n, l, cls = "") =>
-    `<div class="col-6 col-md-4 col-xxl-2"><a class="stat ${cls}" href="#/${href}"><i class="bi bi-${icon}"></i><div><b>${n}</b><small>${l}</small></div></a></div>`;
+    `<div class="col-6 col-md-4 col-xl-2"><a class="stat ${cls}" href="#/${href}"><i class="bi bi-${icon}"></i><div><b>${n}</b><small>${l}</small></div></a></div>`;
   const K = !hasOp("deliveries");
   return (
     pageHead("Dashboard", `Welcome back, ${esc(S.user.name.split(" ")[0])}!`) +
-    `<div class="row g-3 mb-4">
- ${card("products", "box-seam", ps.length, "Active products")}${card("inventory?show=low", "exclamation-triangle", al.low, "Low stock", "low")}${card("inventory?show=out", "x-octagon", al.out, "Out of stock", "low")}
- ${card("inventory?show=soon", "hourglass-split", al.soon, "Expiring soon", "soon") + card("inventory?show=expired", "x-circle", al.exp, "Expired batches", "low")}${card("pos?tab=history", "cash-coin", peso(amt), `${isMgr() ? "Today's sales" : "My sales today"} (${today.length})`)}</div>
- <div class="row g-3"><div class="col-lg-${K ? 12 : 6}">${dataCard({
+    `<div class="row g-4 mb-5">
+ ${card("products", "box-seam", ps.length, "Active products", "stat-blue")}${card("inventory?show=low", "exclamation-triangle", al.low, "Low stock", "stat-red")}${card("inventory?show=out", "x-octagon", al.out, "Out of stock", "stat-red")}
+ ${card("inventory?show=soon", "hourglass-split", al.soon, "Expiring soon", "stat-yellow") + card("inventory?show=expired", "x-circle", al.exp, "Expired batches", "stat-red")}${card("pos?tab=history", "cash-coin", peso(amt), `${isMgr() ? "Today's sales" : "My sales today"} (${today.length})`, "stat-blue-deep stat-money")}</div>
+ <div class="row g-4"><div class="col-lg-${K ? 12 : 6}">${dataCard({
       title: "Recent Sales",
       meta: `${mySales().length} sale${mySales().length === 1 ? "" : "s"}`,
+      cls: "h-100",
       actions: `<a href="#/pos?tab=history" class="btn btn-sm btn-outline-primary">View all</a>`,
       body: tbl(
         ["Ref", "Date", "Total"],
@@ -80,6 +81,7 @@ V.dashboard = () => {
      : `<div class="col-lg-6">${dataCard({
          title: "Recent Deliveries",
          meta: `${S.deliveries.length} deliver${S.deliveries.length === 1 ? "y" : "ies"}`,
+         cls: "h-100",
          actions: `<a href="#/deliveries" class="btn btn-sm btn-outline-primary">View all</a>`,
          body: tbl(
            ["Ref", "Date", "Supplier", "Items"],

@@ -9,12 +9,34 @@ Frontend-only, interactive prototype (HTML5, CSS3, JavaScript, Bootstrap 5, Boot
 
 ## Structure (single-page app, hash routing — avoids duplicated layouts)
 - `index.html` – page shell, modal, side panel, toasts, notification center
-- `assets/css/styles.css` – blue/white design system, responsive + print CSS, animated sidebar rail
+- `assets/css/styles.css` – shared design system (tokens + components), responsive + print CSS, animated sidebar rail
 - `assets/js/data.js` – sample data, `S` state, stock logic (batches, FIFO deduct, level/expiry rules)
 - `assets/js/ui.js` – reusable components (pills, tables, pager, form fields/validation, modal, toast, side panel, page scaffolding, notification builder)
 - `assets/js/main.js` – router, role access, sidebar/header, notification center, global events
 - `assets/js/views-*.js` – screens (auth+dashboard, inventory area, sales+reports, admin)
 - `assets/images/` – approved design reference and instructor notes
+
+## Design system (shared by every screen)
+All values live as CSS custom properties in `:root` (`assets/css/styles.css`), so the whole app restyles from one place:
+
+- **Navy / brand ramp** – `--navy-900 … --navy-500`, `--blue`, `--blue-dark`, `--blue-soft`
+- **Gradients** – `--grad-blue`, `--grad-blue-deep`, `--grad-red`, `--grad-yellow` (dashboard cards), `--grad-navy` (sidebar rail), `--grad-btn`, `--grad-btn-danger` (buttons)
+- **Surfaces** – `--bg` (neutral light grey page), `--panel` (white cards), `--panel-soft`, `--line`, `--line-soft`
+- **Text** – `--text`, `--muted`, `--muted-2`
+- **Status** – `--coral` / `--amber` / `--green` (+ matching `*-bg` backgrounds) for pills, alerts and validation
+- **Shape** – `--radius` (18 px panels), `--radius-sm` (10 px controls), `--radius-lg` (22 px sidebar), `--shadow-1/2/3`
+- **Type** – `--fs-page`, `--fs-section`, `--fs-body`, `--fs-meta`, `--fs-micro`, `--fs-nav` (sidebar items), `--fs-nav-sub` (sub-menu)
+- **Controls** – `--control-h` (40 px), `--control-h-sm` (34 px), spacing tokens `--sp-1 … --sp-5`
+- **Sidebar width** – `--sbw: clamp(252px, 23vw, 372px)` (≈23 % of the viewport, as in the reference; the 252 px floor keeps the longest nav label from clipping). The collapsed rail overrides it with 76 px.
+
+Reusable classes: `.btn` (+ `btn-primary`, `btn-outline-primary`, `btn-outline-secondary`, `btn-danger`, `btn-outline-danger`), `.form-control/.form-select/.form-label/.form-check-input`, `.table` + `.table-action` (`.action-edit`, `.action-view`, `.action-status`, `.action-record`), `.pill` (status badges), `.data-card`, `.toolbar`, `.page-head`, `.stat` (`.stat-blue`, `.stat-red`, `.stat-yellow`, `.stat-blue-deep`, `.stat-money`), `.modal-content`, `.offcanvas`, `.empty`, `.dropdown-menu`.
+
+## Dashboard (matches the supplied UI reference)
+- **Sidebar** – navy gradient rail (~23 % of the viewport width) with rounded right corners, brand block (name on one line), `MENU` row with the collapse toggle, section headings (Overview / Operations / Management / Administration), 1.02 rem labels with 1.25 rem icons, expandable groups with chevrons, live alert badges, floating tooltips in the collapsed rail and the user profile card at the bottom (avatar 44 px, role text never clipped).
+- **Active item** – a **solid white, full-bleed rectangle with square corners**: `.sb-nav` carries no horizontal padding, the row has `border-radius: 0` and no blue indicator, so the white background reaches both edges of the rail. It works for top-level items, for sub-menu items and inside the 76 px collapsed rail (where the parent group carries the block).
+- **Top navigation** – sticky white rounded container (79 px tall) with the breadcrumb trail, the current date and the notification bell in a circular container (no count badge – the unread count lives in the panel).
+- **Summary cards** – six rounded gradient tiles (blue → red → red → yellow → red → blue) 90 px tall with a 42 px white rounded icon container, a 1.25 rem value and a 0.82 rem label (currency uses a compact 0.9 rem value so it never wraps); they reflow 2 → 3 → 6 per row and never overflow.
+- **Content panels** – large rounded white panels on the neutral light-grey page background; Recent Sales and Recent Deliveries share a row (equal height, 24 px gutter) and Recent Activity sits below with the same design language.
 
 ## Layout system (every screen follows the same skeleton)
 1. **Breadcrumb** in the top bar — `Section › Group › Page`, generated from the sidebar tree, so the user always knows where they are.
