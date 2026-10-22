@@ -17,9 +17,83 @@ Auth.login = () =>
     "Log in",
     "Enter your username and password.",
     `<form data-form="doLogin" novalidate class="row g-3"><div class="col-12"><label class="form-label" for="lu">Username <span class="req">*</span></label><input class="form-control" id="lu" autocomplete="off"><div class="invalid-feedback" id="e-lu"></div></div>${pw("lp", "Password")}
- <div id="lerr" class="col-12 text-danger small" role="alert"></div><div class="col-12"><button class="btn btn-primary w-100">Log in</button></div>
+ <div id="lerr" class="col-12 text-danger small" role="alert"></div><div class="col-12"><button class="btn btn-primary w-100">Log in</button></div><div class="col-12 d-flex justify-content-between small"><button class="btn btn-link p-0" type="button" data-act="forgotPassword">Forgot password?</button><button class="btn btn-link p-0" type="button" data-act="createAccount">Create an account</button></div>
 </form>`,
   );
+A.createAccount = () => {
+  const register = () =>
+    modal({
+      title: "Create Account",
+      ok: "Send OTP",
+      body: `<form class="row g-3" novalidate onsubmit="return false">${fld("ca_n", "Full name")}${fld("ca_e", "Email address", { type: "email", attrs: 'autocomplete="email"', hint: "A mock verification code will be shown after submission." })}${fld("ca_u", "Username", { attrs: 'autocomplete="off"', hint: "Use 3 or more letters, numbers, dots or underscores." })}${pw("ca_p", "Password")}${pw("ca_c", "Confirm password")}<div class="col-12 small-muted">New accounts are created as Employee accounts. A Manager can later assign additional operations.</div></form>`,
+      onOk: () => {
+        clearErr();
+        const name = val("ca_n"),
+          email = val("ca_e").trim().toLowerCase(),
+          username = val("ca_u").toLowerCase(),
+          password = $("#ca_p").value;
+        const ok = [
+          check("ca_n", name, "Enter your full name."),
+          check("ca_e", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), "Enter a valid email address."),
+          check("ca_u", /^[a-z0-9._]{3,}$/.test(username), "Use 3+ letters, numbers, dots or underscores."),
+          check("ca_u", !S.users.some((u) => u.username === username), "This username is already used."),
+          check("ca_p", password.length >= 8 && /\d/.test(password), "Use 8+ characters with a number."),
+          check("ca_c", $("#ca_c").value === password, "Passwords do not match."),
+        ];
+        if (ok.includes(false)) return false;
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        modal({
+          title: "Verify Email",
+          ok: "Verify and Create",
+          body: `<form class="row g-3" novalidate onsubmit="return false"><div class="col-12"><p class="mb-0">A mock OTP was sent to <b>${esc(email)}</b>.</p></div><div class="col-12 alert alert-info mb-0"><b>Prototype OTP: ${otp}</b></div>${fld("ca_otp", "Enter OTP", { attrs: 'inputmode="numeric" maxlength="6"', hint: "In a real system, this code would be sent by email." })}</form>`,
+          onOk: () => {
+            clearErr();
+            if (!check("ca_otp", val("ca_otp") === otp, "Enter the correct OTP.")) return false;
+            S.users.push({
+              id: S.n.user++,
+              name,
+              email,
+              username,
+              role: "Employee",
+              active: true,
+              pw: password,
+              ops: [],
+            });
+            logAudit("User", `Created account ${username} (Employee: Sales only)`, "—");
+            toast("Account verified and created. You can now log in.");
+          },
+        });
+      },
+    });
+  register();
+};
+A.forgotPassword = () => {
+  modal({
+    title: "Forgot Password",
+    ok: "Reset Password",
+    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("fp_u", "Username", { attrs: 'autocomplete="off"' })}${pw("fp_p", "New password")}${pw("fp_c", "Confirm new password")}<div class="col-12 small-muted">This prototype does not send email. Your username is used to locate the account.</div></form>`,
+    onOk: () => {
+      clearErr();
+      const username = val("fp_u").toLowerCase(),
+        password = $("#fp_p").value,
+        user = S.users.find((u) => u.username === username);
+      const ok = [
+        check("fp_u", username, "Enter your username."),
+        check("fp_u", !!user, "No account was found with that username."),
+        check(
+          "fp_p",
+          password.length >= 8 && /\d/.test(password),
+          "Use 8+ characters with a number.",
+        ),
+        check("fp_c", $("#fp_c").value === password, "Passwords do not match."),
+      ];
+      if (ok.includes(false)) return false;
+      user.pw = password;
+      logAudit("Account", `Password reset for ${username}`, "—");
+      toast("Password reset. You can now log in.");
+    },
+  });
+};
 A.doLogin = () => {
   clearErr();
   $("#lerr").textContent = "";

@@ -1,0 +1,20 @@
+TEST REPORT
+
+Executed:
+- node --check assets/js/data.js
+- node --check assets/js/main.js
+- node --check assets/js/ui.js
+- node --check assets/js/views-inventory.js
+- node --check assets/js/views-admin.js
+- git diff --check
+- Supplier-return and receiving-document code paths reviewed.
+
+Results:
+- All syntax checks passed.
+- Diff whitespace check passed.
+
+Not executed:
+- Browser/manual UI testing.
+- Exact posting and print timing still requires browser/manual testing.
+- Full transaction regression testing.
+- Automated end-to-end tests; none are configured.

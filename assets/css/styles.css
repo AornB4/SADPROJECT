@@ -1874,6 +1874,11 @@ textarea.form-control {
 .offcanvas-body {
   padding: 1.1rem;
 }
+.delivery-detail-list {
+  max-height: calc(100vh - 5.5rem);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
 /* shared dialog styling (modal + side panel) */
 .modal-content {
   border: 0;

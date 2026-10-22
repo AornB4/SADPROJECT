@@ -15,6 +15,7 @@ const ROUTE_RULE = {
   suppliers: "mgr",
   reports: "mgr",
   categories: "mgr",
+  archives: "mgr",
   settings: "mgr",
   users: "mgr",
   audit: "mgr",
@@ -35,7 +36,7 @@ const NAV = [
         kids: [
           ["inventory", "Stock Monitoring"],
           ["deliveries", "Deliveries"],
-          ["spoilage", "Spoilage and Returns"],
+          ["spoilage", "Adjustments & Returns"],
           ["movements", "Stock Movements"],
         ],
       },
@@ -68,6 +69,7 @@ const NAV = [
         kids: [
           ["categories", "Categories"],
           ["settings", "Alert Settings"],
+          ["archives", "Archives"],
           ["account", "My Account"],
         ],
       },
@@ -78,6 +80,7 @@ const RK = {
   inventory: "inv",
   products: "prod",
   categories: "cat",
+  archives: "arc",
   suppliers: "sup",
   pos: "pos",
   movements: "mov",
@@ -90,13 +93,14 @@ const RK = {
 Object.assign(DEF, {
   inv: { q: "", cat: "", show: "" },
   prod: { q: "", cat: "", type: "", status: "active" },
-  cat: { q: "", status: "active" },
-  sup: { q: "", status: "active" },
+  cat: { q: "", status: "all" },
+  arc: {},
+  sup: { q: "", status: "all" },
   pos: { q: "", cat: "", tab: "sale" },
   mov: { from: "", to: "", pid: "", type: "" },
   spo: { kind: "" },
   rep: { type: "inventory", from: off(-30), to: off(0), cat: "", q: "" },
-  usr: { q: "", role: "", status: "active" },
+  usr: { q: "", role: "", status: "all" },
   aud: { from: "", to: "", user: "", type: "", q: "" },
   del: { q: "" },
 });
@@ -293,6 +297,10 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("input", (e) => {
   const t = e.target;
+  if (t.id === "pcat" && $("#pt")) {
+    const c = catOf(t.value);
+    $("#pt").value = c ? c.type : "";
+  }
   if (t.dataset.nf) {
     notifQuery = t.value;
     renderNotif();
@@ -303,7 +311,11 @@ document.addEventListener("input", (e) => {
     P[k] = 1;
     if ($("#res")) $("#res").innerHTML = RES[k]();
   }
-  if (t.dataset.dl) S.dl[t.dataset.dl] = t.value;
+  if (t.dataset.dl) {
+    S.dl[t.dataset.dl] = t.value;
+    if (t.dataset.dl === "sup" && ROUTE === "delivery-new")
+      $("#view").innerHTML = V["delivery-new"]();
+  }
   if (t.dataset.dll) {
     const [i, k] = t.dataset.dll.split("."),
       l = S.dl.lines[i];
@@ -318,6 +330,14 @@ document.addEventListener("input", (e) => {
   if (t.id === "tender") {
     S.tender = t.value;
     payUpd();
+  }
+});
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.dataset.archiveFilter) {
+    S.archiveType = t.value;
+    S.archiveSel = [];
+    if ($("#archiveRes")) $("#archiveRes").innerHTML = archiveTable(t.value);
   }
 });
 document.addEventListener("submit", (e) => {

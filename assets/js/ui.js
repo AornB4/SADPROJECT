@@ -7,6 +7,7 @@ const actionLegendItems = {
   edit: ["pencil-square", "Edit", "action-edit"],
   view: ["eye", "View", "action-view"],
   status: ["arrow-repeat", "Deactivate / Reactivate", "action-status"],
+  archive: ["archive", "Archive / Restore", "action-status"],
   spoilage: ["exclamation-triangle", "Record spoilage", "action-record"],
 };
 const actionLegendOrder = ["edit", "status", "view", "spoilage"];

@@ -4,13 +4,10 @@ const has = (s, q) => !q || s.toLowerCase().includes(q.toLowerCase());
 const canEdit = () => isMgr();
 /* ---- Product details panel (closed by default) ---- */
 A.view = (pid) => {
-  const p = prod(pid),
-    bs = batchesOf(p.id),
-    mv = S.movements.filter((m) => m.pid === p.id).slice(0, 8);
+  const p = prod(pid);
   openPanel(
     p.name,
-    `<div class="mb-3">${stockPill(p)} <span class="small-muted ms-2">Minimum: ${p.min}</span></div>` +
-      kv([
+    kv([
         ["Product code", p.code],
         ["Category", esc(catName(p.cat))],
         ["Type", p.type],
@@ -19,24 +16,6 @@ A.view = (pid) => {
         ["Selling price", peso(p.price)],
         ["Status", activePill(p.active)],
       ]) +
-      `<h3 class="h6 mt-4">Batches in stock</h3>` +
-      tbl(
-        ["Batch", "Arrived", "Expires", "Qty"],
-        bs.map(
-          (b) =>
-            `<tr><td>${b.ref}</td><td>${dfmt(b.arr)}</td><td>${b.exp ? dfmt(b.exp) + "<br>" + expBadge(b.exp) : "—"}</td><td>${b.qty}</td></tr>`,
-        ),
-        "No stock on hand.",
-      ) +
-      `<h3 class="h6 mt-4">Stock movement history</h3>` +
-      tbl(
-        ["Date", "Type", "Qty", "Ref"],
-        mv.map(
-          (m) =>
-            `<tr><td>${dtfmt(m.dt)}</td><td>${m.type}</td><td>${m.qty > 0 ? "+" : ""}${m.qty}</td><td>${m.ref || "—"}</td></tr>`,
-        ),
-        "No movements yet.",
-      ) +
       `<button class="btn btn-outline-secondary mt-3" data-bs-dismiss="offcanvas">Close</button>`,
   );
 };
@@ -69,7 +48,6 @@ RES.inv = () => {
     title: "Stock on hand",
     meta: `${L.length} product${L.length === 1 ? "" : "s"}`,
     body:
-      actionLegend(["view"]) +
       tbl(
         [
           "Product",
@@ -77,11 +55,10 @@ RES.inv = () => {
           "Available Stock",
           "Minimum Stock",
           "Expiration Date",
-          "Action",
         ],
         sl(L, "inv").map(
           (p) =>
-            `<tr><td><b>${esc(p.name)}</b><div class="small-muted">${p.code}</div></td><td>${esc(catName(p.cat))}</td><td>${stockPill(p)}</td><td>${p.min}</td><td>${expCell(p)}</td><td><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button></td></tr>`,
+            `<tr><td><b>${esc(p.name)}</b><div class="small-muted">${p.code}</div></td><td>${esc(catName(p.cat))}</td><td>${stockPill(p)}</td><td>${p.min}</td><td>${expCell(p)}</td></tr>`,
         ),
         "No products match your search.",
       ),
@@ -108,20 +85,26 @@ RES.prod = () => {
         (!f.type || p.type === f.type) &&
         (st === "all" || (st === "active") === p.active),
     );
+  S.prodSel = (S.prodSel || []).filter((id) => L.some((p) => p.id === id));
+  const selected = new Set(S.prodSel),
+    allSelected = m && L.length > 0 && L.every((p) => selected.has(p.id));
+  const actionHead = m
+    ? `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible products" data-act="prodSelectAll" ${allSelected ? "checked" : ""}><span>Action</span><button class="btn btn-sm table-action action-edit" data-act="prodUpdateSelected" aria-label="Update selected product${S.prodSel.length === 1 ? "" : "s"}" ${S.prodSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="prodArchiveSelected" aria-label="Archive selected products" ${S.prodSel.length ? "" : "disabled"}><i class="bi bi-archive"></i></button></span>`
+    : "Action";
   const heads = ["Code", "Product", "Category", "Type"].concat(
     m ? ["Cost"] : [],
-    ["Price", "In stock", "Min. stock", "Actions"],
+    ["Price", "Min. stock", actionHead],
   );
   return dataCard({
     title: "Product list",
     meta: `${L.length} product${L.length === 1 ? "" : "s"}`,
     body:
-      actionLegend(["view", ...(m ? ["edit", "status"] : [])]) +
+      actionLegend(["view", ...(m ? ["edit", "archive"] : [])]) +
       tbl(
         heads,
         sl(L, "prod").map(
           (p) =>
-            `<tr><td>${p.code}</td><td><b>${esc(p.name)}</b><div class="small-muted">${p.unit}</div>${p.active ? "" : activePill(0)}</td><td>${esc(catName(p.cat))}</td><td>${p.type}</td>${m ? `<td>${peso(p.cost)}</td>` : ""}<td>${peso(p.price)}</td><td>${stockPill(p)}</td><td>${p.min}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="view" data-a="${p.id}" aria-label="View ${esc(p.name)}"><i class="bi bi-eye"></i></button>${m ? ` <button class="btn btn-sm table-action action-edit" data-act="prodForm" data-a="${p.id}" aria-label="Edit ${esc(p.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="prodToggle" data-a="${p.id}" aria-label="${p.active ? "Deactivate" : "Reactivate"} ${esc(p.name)}"><i class="bi bi-arrow-repeat"></i></button>` : ""}</td></tr>`,
+            `<tr><td>${p.code}</td><td><b>${esc(p.name)}</b><div class="small-muted">${esc(p.unit)}</div>${p.active ? "" : activePill(0)}</td><td>${esc(catName(p.cat))}</td><td>${p.type}</td>${m ? `<td>${peso(p.cost)}</td>` : ""}<td>${peso(p.price)}</td><td>${p.min}</td><td>${m ? `<input class="form-check-input" type="checkbox" aria-label="Select ${esc(p.name)}" data-act="prodSelect" data-a="${p.id}" ${selected.has(p.id) ? "checked" : ""}>` : '<span class="muted">—</span>'}</td></tr>`,
         ),
         "No products found.",
       ),
@@ -182,22 +165,13 @@ A.prodForm = (id) => {
     size: "modal-lg",
     ok: "Save Product",
     body: `<form class="row g-3" novalidate onsubmit="return false">${fld("pn", "Product name", { val: p.name })}${fld("pc", "Product code (SKU)", { val: p.code, hint: "Example: MLK-001" })}
- ${fld("pcat", "Category", { val: p.cat, opts: catOpts(false, p.cat), hint: "Categories come from Settings › Categories." })}${fld(
-   "pt",
-   "Product type",
-   {
-     val: p.type,
-     opts: [
-       ["", "Select type"],
-       ["Perishable", "Perishable"],
-       ["Non-Perishable", "Non-Perishable"],
-     ],
-   },
- )}
+ ${fld("pcat", "Category", { val: p.cat, opts: catOpts(false, p.cat), hint: "Product type is determined by the selected category." })}${fld("pt", "Product type", { val: p.type, attrs: 'readonly', hint: "Derived from category configuration." })}
  ${fld("pu", "Unit of measurement", { val: p.unit, hint: "Piece, Liter, Kilogram, Pack…" })}${fld("pm", "Minimum stock", { type: "number", val: p.min, attrs: 'min="0"' })}${fld("pco", "Purchase cost (₱)", { type: "number", val: p.cost, attrs: 'min="0" step="0.01"' })}${fld("ps", "Selling price (₱)", { type: "number", val: p.price, attrs: 'min="0" step="0.01"' })}</form>`,
     onOk: () => {
       clearErr();
       const code = val("pc").toUpperCase(),
+        category = catOf(val("pcat")),
+        type = category && category.type,
         co = +val("pco"),
         pr = +val("ps");
       const ok = [
@@ -208,7 +182,7 @@ A.prodForm = (id) => {
           code ? "This code is already used." : "Enter a product code.",
         ),
         check("pcat", val("pcat"), "Select a category."),
-        check("pt", val("pt"), "Select a type."),
+        check("pt", type && val("pt") === type, "Select a category with a valid classification."),
         check("pu", val("pu"), "Enter the unit."),
         check("pm", val("pm") !== "" && +val("pm") >= 0, "Enter 0 or more."),
         check("pco", val("pco") !== "" && co > 0, "Enter a cost above 0."),
@@ -225,7 +199,7 @@ A.prodForm = (id) => {
         name: val("pn"),
         code,
         cat: +val("pcat"),
-        type: val("pt"),
+        type,
         unit: val("pu"),
         min: +val("pm"),
         cost: co,
@@ -246,48 +220,162 @@ A.prodToggle = (id) => {
   if (!guard(isMgr())) return;
   const p = prod(id);
   confirmBox(
-    p.active ? "Deactivate product?" : "Reactivate product?",
+    p.active ? "Archive product?" : "Restore product?",
     p.active
-      ? `“${esc(p.name)}” will be hidden from stock and sales. The record and its history are kept.`
+      ? `“${esc(p.name)}” will be hidden from product lists, stock, and sales. The record and its history are kept.`
       : `“${esc(p.name)}” will be available again.`,
     () => {
       p.active = !p.active;
       logAudit(
         "Product",
-        `${p.active ? "Reactivated" : "Deactivated"} product ${p.code} – ${p.name}`,
+        `${p.active ? "Restored" : "Archived"} product ${p.code} – ${p.name}`,
       );
       toast(
         p.active
-          ? "Product reactivated."
-          : "Product deactivated. History is kept.",
+          ? "Product restored."
+          : "Product archived. History is kept.",
       );
+      S.prodSel = (S.prodSel || []).filter((selectedId) => selectedId !== p.id);
       refresh();
     },
-    p.active ? "Deactivate" : "Reactivate",
+    p.active ? "Archive" : "Restore",
     p.active,
   );
 };
+A.prodSelect = (id, _, t) => {
+  if (!isMgr()) return;
+  const selected = new Set(S.prodSel || []);
+  if (t.checked) selected.add(+id);
+  else selected.delete(+id);
+  S.prodSel = [...selected];
+  refresh();
+};
+A.prodSelectAll = (_, __, t) => {
+  if (!isMgr()) return;
+  const f = F.prod,
+    st = f.status,
+    visible = S.products.filter(
+      (p) =>
+        has(p.name + p.code, f.q) &&
+        (!f.cat || p.cat == f.cat) &&
+        (!f.type || p.type === f.type) &&
+        (st === "all" || (st === "active") === p.active),
+    );
+  S.prodSel = t.checked ? visible.map((p) => p.id) : [];
+  refresh();
+};
+A.prodUpdateSelected = () => {
+  if (!guard(isMgr())) return;
+  if ((S.prodSel || []).length !== 1) {
+    toast("Select exactly one product to update.", "err");
+    return;
+  }
+  A.prodForm(S.prodSel[0]);
+};
+A.prodArchiveSelected = () => {
+  if (!guard(isMgr())) return;
+  const selected = (S.prodSel || [])
+    .map((id) => prod(id))
+    .filter((p) => p);
+  if (!selected.length) {
+    toast("Select at least one product to archive.", "err");
+    return;
+  }
+  const active = selected.filter((p) => p.active);
+  if (!active.length) {
+    toast("The selected products are already archived.", "err");
+    return;
+  }
+  confirmBox(
+    "Archive selected products?",
+    `${active.length} product${active.length === 1 ? "" : "s"} will be hidden from product lists, stock, and sales. Their records and history will be kept.`,
+    () => {
+      active.forEach((p) => {
+        p.active = false;
+        p.archived = true;
+        logAudit("Product", `Archived product ${p.code} – ${p.name}`);
+      });
+      S.prodSel = [];
+      toast(`${active.length} product${active.length === 1 ? "" : "s"} archived.`);
+      refresh();
+    },
+    "Archive",
+    true,
+  );
+};
 /* ---- Deliveries ---- */
+const deliverySupplier = (d) => {
+  const current = supOf(d.sup) || {};
+  return {
+    id: d.sup,
+    name: d.supName || current.name || "—",
+    contact: d.supContact || current.contact || "—",
+    phone: d.supPhone || current.phone || "—",
+    address: d.supAddress || current.address || "—",
+  };
+};
+const deliveryLineProduct = (l) => {
+  const p = prod(l.pid);
+  return {
+    code: l.code || (p && p.code) || "—",
+    name: l.name || (p && p.name) || "—",
+    category: l.category || (p && catName(p.cat)) || "—",
+    type: l.type || (p && p.type) || "—",
+    unit: l.unit || (p && p.unit) || "—",
+  };
+};
 RES.del = () => {
   const f = F.del,
     L = S.deliveries.filter((d) =>
       has(d.ref + " " + supOf(d.sup).name, f.q),
     );
+  S.delSel = (S.delSel || []).filter((ref) => L.some((d) => d.ref === ref));
+  const selected = new Set(S.delSel),
+    allSelected = L.length > 0 && L.every((d) => selected.has(d.ref));
+  const actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible deliveries" data-act="delSelectAll" ${allSelected ? "checked" : ""}><span>Action</span><button class="btn btn-sm table-action action-view" data-act="delViewSelected" aria-label="View selected deliver${S.delSel.length === 1 ? "y" : "ies"}" ${S.delSel.length ? "" : "disabled"}><i class="bi bi-eye"></i></button></span>`;
   return dataCard({
     title: "Delivery records",
     meta: `${L.length} ${L.length === 1 ? "delivery" : "deliveries"}`,
     body:
-      actionLegend(["view"]) +
       tbl(
-        ["Reference", "Date", "Supplier", "Items", "Total cost", "Action"],
+        ["Reference", "Supplier receipt", "Date", "Supplier", "Items", "Total cost", actionHead],
         sl(L, "del").map(
           (d) =>
-            `<tr><td><b>${d.ref}</b></td><td>${dfmt(d.date)}</td><td>${esc(supOf(d.sup).name)}</td><td>${d.lines.length}</td><td>${peso(d.lines.reduce((s, l) => s + l.qty * l.cost, 0))}</td><td><button class="btn btn-sm table-action action-view" data-act="delView" data-a="${d.ref}" aria-label="View delivery ${d.ref}"><i class="bi bi-eye"></i></button></td></tr>`,
+            `<tr><td><b>${esc(d.ref)}</b></td><td>${esc(d.receiptRef || "—")}</td><td>${dfmt(d.date)}</td><td>${esc(deliverySupplier(d).name)}</td><td>${d.lines.length}</td><td>${peso(d.lines.reduce((s, l) => s + l.qty * l.cost, 0))}</td><td><input class="form-check-input" type="checkbox" aria-label="Select delivery ${esc(d.ref)}" data-act="delSelect" data-a="${esc(d.ref)}" ${selected.has(d.ref) ? "checked" : ""}></td></tr>`,
         ),
         "No deliveries recorded yet.",
       ),
     foot: pager("del", L.length),
   });
+};
+A.delSelect = (ref, _, t) => {
+  const selected = new Set(S.delSel || []);
+  if (t.checked) selected.add(ref);
+  else selected.delete(ref);
+  S.delSel = [...selected];
+  refresh();
+};
+A.delSelectAll = (_, __, t) => {
+  const f = F.del,
+    visible = S.deliveries.filter((d) =>
+      has(d.ref + " " + supOf(d.sup).name, f.q),
+    );
+  S.delSel = t.checked ? visible.map((d) => d.ref) : [];
+  refresh();
+};
+A.delViewSelected = () => {
+  const deliveries = (S.delSel || [])
+    .map((ref) => S.deliveries.find((d) => d.ref === ref))
+    .filter(Boolean);
+  if (!deliveries.length) {
+    toast("Select at least one delivery to view.", "err");
+    return;
+  }
+  if (deliveries.length === 1) return A.delView(deliveries[0].ref);
+  openPanel(
+    `${deliveries.length} Selected Deliveries`,
+    `<div class="delivery-detail-list">${deliveries.map(deliveryDetails).join('<hr class="my-4">')}</div>`,
+  );
 };
 V.deliveries = () =>
   pageHead(
@@ -299,22 +387,47 @@ V.deliveries = () =>
   `<div id="res">${RES.del()}</div>`;
 A.delView = (ref) => {
   const d = S.deliveries.find((x) => x.ref === ref);
-  openPanel(
-    "Delivery " + ref,
-    kv([
-      ["Supplier", esc(supOf(d.sup).name)],
-      ["Date", dfmt(d.date)],
-      ["Notes", esc(d.notes) || "—"],
-    ]) +
-      `<div class="mt-3">${tbl(
-        ["Product", "Qty", "Cost", "Expires"],
-        d.lines.map(
-          (l) =>
-            `<tr><td>${esc(prod(l.pid).name)}</td><td>${l.qty}</td><td>${peso(l.cost)}</td><td>${dfmt(l.exp)}</td></tr>`,
-        ),
-      )}</div>`,
-  );
+  if (d) openPanel("Delivery " + ref, deliveryDetails(d));
 };
+const deliveryDetails = (d) =>
+  `<div class="d-flex justify-content-between align-items-center mb-3"><b>Delivery summary</b><button class="btn btn-sm btn-outline-primary" data-act="delPrint" data-a="${esc(d.ref)}"><i class="bi bi-printer"></i> Print receiving document</button></div>` +
+  kv([
+    ["System reference", esc(d.ref)],
+    ["Supplier receipt / invoice", esc(d.receiptRef || "—")],
+    ["Date", dfmt(d.date)],
+    ["Status", esc(d.status || "Posted")],
+    ["Supplier", esc(deliverySupplier(d).name)],
+    ["Supplier ID", esc(deliverySupplier(d).id)],
+    ["Contact person", esc(deliverySupplier(d).contact || "—")],
+    ["Phone", esc(deliverySupplier(d).phone || "—")],
+    ["Address", esc(deliverySupplier(d).address || "—")],
+    ["Delivery personnel", esc(d.deliveryPersonnel || "—")],
+    ["Receiving personnel", esc(d.receivingPersonnel || "—")],
+    ["Notes", esc(d.notes) || "—"],
+  ]) +
+  `<div class="mt-3">${tbl(
+    ["Code", "Product", "Category", "Type", "Unit", "Qty", "Cost", "Line total", "Expires", "Batch"],
+    d.lines.map(
+      (l) => {
+        const p = deliveryLineProduct(l);
+        return `<tr><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td>${esc(p.category)}</td><td>${esc(p.type)}</td><td>${esc(p.unit)}</td><td>${l.qty}</td><td>${peso(l.cost)}</td><td>${peso(l.qty * l.cost)}</td><td>${dfmt(l.exp)}</td><td>${esc(l.batchRef || "—")}</td></tr>`;
+      },
+    ),
+  )}</div><div class="text-end mt-3"><b>Total: ${peso(d.lines.reduce((s, l) => s + l.qty * l.cost, 0))}</b></div>`;
+A.delPrint = (ref) => printDelivery(ref);
+function printDelivery(ref) {
+  const d = S.deliveries.find((x) => x.ref === ref);
+  if (!d) return toast("Receiving document could not be generated.", "err");
+  const supplier = deliverySupplier(d);
+  const area = $("#print-area");
+  area.innerHTML = `<div class="receipt"><div class="text-center"><b>STA. MONICA OF BUSTOS<br>MULTIPURPOSE COOPERATIVE</b><br><b>Goods Received Note</b><br><small>System-generated document — NOT AN OFFICIAL SUPPLIER OR TAX RECEIPT</small></div><hr>System reference: ${esc(d.ref)}<br>Supplier receipt/invoice: ${esc(d.receiptRef || "—")}<br>Date: ${dfmt(d.date)}<br>Posted: ${esc(d.postedAt || "—")}<hr>Supplier ID: ${esc(supplier.id)}<br>Supplier: ${esc(supplier.name)}<br>Contact: ${esc(supplier.contact || "—")}<br>Phone: ${esc(supplier.phone || "—")}<br>Address: ${esc(supplier.address || "—")}<br>Delivery personnel: ${esc(d.deliveryPersonnel || "—")}<br>Receiving personnel: ${esc(d.receivingPersonnel || "—")}<hr><table>${d.lines.map((l) => { const p = deliveryLineProduct(l); return `<tr><td>${esc(p.code)}</td><td>${esc(p.name)}<br><small>${esc(p.category)} · ${esc(p.type)} · ${esc(p.unit)}</small></td><td>${l.qty}</td><td>${peso(l.cost)}</td><td>${peso(l.qty * l.cost)}</td><td>${dfmt(l.exp)}</td></tr>`; }).join("")}</table><hr><b>Total: ${peso(d.lines.reduce((s, l) => s + l.qty * l.cost, 0))}</b><br>Notes: ${esc(d.notes || "—")}</div>`;
+  document.body.classList.add("printing-receipt");
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("printing-receipt");
+    area.innerHTML = "";
+  }, { once: true });
+  setTimeout(() => window.print(), 300);
+}
 A.newDel = () => {
   if (!guard(hasOp("deliveries"))) return;
   S.dl = null;
@@ -346,10 +459,14 @@ V["delivery-new"] = () => {
       sup: "",
       ref: dlNextRef(),
       date: off(0),
+      receiptRef: "",
+      deliveryPersonnel: "",
+      receivingPersonnel: "",
       notes: "",
       lines: [{ pid: "", qty: "", cost: "", exp: "" }],
     };
-  const d = S.dl;
+  const d = S.dl,
+    supplier = d.sup ? supOf(d.sup) : null;
   return (
     pageHead(
       "New Delivery",
@@ -362,7 +479,7 @@ V["delivery-new"] = () => {
       meta: "Fields marked * are required",
       pad: true,
       body: `<div id="dlErr" role="alert"></div><div class="row g-3 mb-3">
- ${fld("dsup", "Supplier", { val: d.sup, opts: [["", "Select supplier"]].concat(S.suppliers.filter((s) => s.active).map((s) => [s.id, s.name])), attrs: 'data-dl="sup"', col: "col-md-4" })}${fld("dref", "Delivery reference", { val: d.ref, attrs: 'data-dl="ref"', col: "col-md-4" })}${fld("ddate", "Delivery date", { type: "date", val: d.date, attrs: 'data-dl="date"', col: "col-md-4" })}${fld("dnotes", "Notes", { type: "textarea", val: d.notes, req: false, attrs: 'data-dl="notes"', col: "col-12" })}</div>
+ ${fld("dsup", "Supplier", { val: d.sup, opts: [["", "Select supplier"]].concat(S.suppliers.filter((s) => s.active).map((s) => [s.id, s.name])), attrs: 'data-dl="sup"', col: "col-md-4" })}${fld("dref", "System delivery reference", { val: d.ref, attrs: 'data-dl="ref" readonly', col: "col-md-4" })}${fld("ddate", "Delivery date", { type: "date", val: d.date, attrs: 'data-dl="date"', col: "col-md-4" })}${fld("dsupid", "Supplier ID", { val: supplier ? supplier.id : "", attrs: "readonly", col: "col-md-4" })}${fld("dsupname", "Supplier name", { val: supplier ? supplier.name : "", attrs: "readonly", col: "col-md-4" })}${fld("dsupcontact", "Contact person", { val: supplier ? supplier.contact : "", attrs: "readonly", col: "col-md-4" })}${fld("dsupphone", "Supplier phone", { val: supplier ? supplier.phone : "", attrs: "readonly", col: "col-md-4" })}${fld("dsupaddress", "Supplier address", { val: supplier ? supplier.address : "", attrs: "readonly", col: "col-12" })}${fld("dreceipt", "Supplier delivery receipt / invoice no.", { val: d.receiptRef, attrs: 'data-dl="receiptRef"', col: "col-md-4" })}${fld("ddp", "Delivery personnel", { val: d.deliveryPersonnel, attrs: 'data-dl="deliveryPersonnel"', col: "col-md-4" })}${fld("drp", "Receiving personnel", { val: d.receivingPersonnel, attrs: 'data-dl="receivingPersonnel"', col: "col-md-4" })}${fld("dnotes", "Notes", { type: "textarea", val: d.notes, req: false, attrs: 'data-dl="notes"', col: "col-12" })}</div>
  <div class="table-responsive"><table class="table"><colgroup><col style="width:30%"><col style="width:13%"><col style="width:16%"><col style="width:21%"><col style="width:13%"><col style="width:7%"></colgroup><thead><tr><th>Product</th><th>Quantity</th><th>Unit cost (₱)</th><th>Expiration date</th><th class="text-end">Line total</th><th></th></tr></thead><tbody id="lines">${dlLines()}</tbody></table></div>
  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><button class="btn btn-outline-primary" data-act="delLineAdd"><i class="bi bi-plus-lg"></i> Add item</button><div class="fs-5">Total: <b id="dlTotal">${peso(dlSum())}</b></div></div>
  <div class="text-end mt-3"><button class="btn btn-primary" data-act="delSave">Save Delivery</button></div>`,
@@ -389,6 +506,11 @@ A.delSave = () => {
   else if (S.deliveries.some((x) => x.ref === d.ref.trim()))
     er.push("This delivery reference already exists.");
   if (!d.date) er.push("Select the delivery date.");
+  if (!String(d.receiptRef || "").trim()) er.push("Enter the supplier receipt or invoice number.");
+  else if (S.deliveries.some((x) => x.sup == d.sup && String(x.receiptRef || "").trim().toLowerCase() === d.receiptRef.trim().toLowerCase()))
+    er.push("This supplier receipt or invoice number is already recorded for this supplier.");
+  if (!String(d.deliveryPersonnel || "").trim()) er.push("Enter the delivery personnel.");
+  if (!String(d.receivingPersonnel || "").trim()) er.push("Enter the receiving personnel.");
   d.lines.forEach((l, i) => {
     const p = prod(l.pid),
       n = `Item ${i + 1}: `;
@@ -408,23 +530,40 @@ A.delSave = () => {
     `${d.lines.length} item(s), total ${peso(dlSum())}. Stock will increase (simulated).`,
     () => {
       const ref = d.ref.trim();
-      S.deliveries.unshift({
+      const supplier = supOf(d.sup),
+        saved = {
         ref,
         date: d.date,
         sup: +d.sup,
+        supName: supplier.name,
+        supContact: supplier.contact,
+        supPhone: supplier.phone,
+        supAddress: supplier.address,
+        receiptRef: d.receiptRef.trim(),
+        status: "Posted",
+        postedAt: nowStamp(),
+        deliveryPersonnel: d.deliveryPersonnel,
+        receivingPersonnel: d.receivingPersonnel,
         notes: d.notes,
         lines: d.lines.map((l) => ({
           pid: +l.pid,
           qty: +l.qty,
           cost: +l.cost,
           exp: l.exp || null,
+          ...deliveryLineProduct(l),
         })),
-      });
+      };
+      if (S.deliveries.some((x) => x.ref === ref)) return toast("This delivery was already posted.", "err");
+      S.deliveries.unshift(saved);
       S.n.del++;
-      d.lines.forEach((l) => {
-        addBatch(+l.pid, +l.qty, l.exp, +d.sup);
+      d.lines.forEach((l, i) => {
+        addBatch(+l.pid, +l.qty, l.exp, +d.sup, ref + "-L" + (i + 1));
         S.batches[S.batches.length - 1].arr = d.date;
-        prod(l.pid).cost = +l.cost;
+        const batch = S.batches[S.batches.length - 1];
+        batch.deliveryRef = ref;
+        batch.deliveryLine = i + 1;
+        batch.receiptRef = d.receiptRef.trim();
+        saved.lines[i].batchRef = batch.ref;
         logMove(+l.pid, "Delivery", +l.qty, ref, "Stock received");
       });
       logAudit(
@@ -434,6 +573,7 @@ A.delSave = () => {
       S.dl = null;
       location.hash = "#/deliveries";
       toast(`Delivery ${ref} saved. Stock updated (simulated).`);
+      setTimeout(() => printDelivery(ref), 0);
     },
     "Save delivery",
   );
@@ -441,7 +581,16 @@ A.delSave = () => {
 /* ---- Spoilage and Returns ---- */
 RES.spo = () => {
   const k = F.spo.kind,
-    L = S.spoilage.filter((s) => !k || s.kind === k);
+    m = isMgr(),
+    L = S.spoilage.filter(
+      (s) => !s.archived && (!k || (k === "Return" ? s.kind === "Supplier Return" : s.kind === k)),
+    );
+  S.spoSel = (S.spoSel || []).filter((id) => L.some((s) => s.id === id));
+  const selected = new Set(S.spoSel),
+    allSelected = L.length > 0 && L.every((s) => selected.has(s.id)),
+    actionHead = m
+      ? `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible adjustment and return records" data-act="spoSelectAll" ${allSelected ? "checked" : ""}><span>Action</span><button class="btn btn-sm table-action action-edit" data-act="spoUpdateSelected" aria-label="Update selected record${S.spoSel.length === 1 ? "" : "s"}" ${S.spoSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="spoArchiveSelected" aria-label="Archive selected records" ${S.spoSel.length ? "" : "disabled"}><i class="bi bi-archive"></i></button></span>`
+      : "Action";
   return dataCard({
     title: "Spoilage and return records",
     meta: `${L.length} record${L.length === 1 ? "" : "s"}`,
@@ -456,29 +605,141 @@ RES.spo = () => {
         "Condition",
         "Sale ref",
         "Disposition",
+        actionHead,
       ],
       sl(L, "spo").map(
         (s) =>
-          `<tr><td><b>${s.id}</b></td><td>${dfmt(s.date)}</td><td>${s.kind}</td><td>${esc(prod(s.pid).name)}</td><td>${s.qty}</td><td>${esc(s.reason)}</td><td>${esc(s.cond)}</td><td>${s.saleRef || "—"}</td><td>${s.disp}</td></tr>`,
+          `<tr><td><b>${esc(s.id)}</b></td><td>${dfmt(s.date)}</td><td>${esc(s.kind)}</td><td>${esc((prod(s.pid) || {}).name || "—")}</td><td>${s.qty}</td><td>${esc(s.reason)}</td><td>${esc(s.cond)}</td><td>${esc(s.saleRef || "—")}</td><td>${esc(s.disp || "—")}</td><td>${m ? `<input class="form-check-input" type="checkbox" aria-label="Select record ${esc(s.id)}" data-act="spoSelect" data-a="${esc(s.id)}" ${selected.has(s.id) ? "checked" : ""}>` : '<span class="muted">—</span>'}</td></tr>`,
       ),
       "No records yet.",
     ),
     foot: pager("spo", L.length),
   });
 };
+A.spoSelect = (id, _, t) => {
+  const selected = new Set(S.spoSel || []);
+  if (t.checked) selected.add(id);
+  else selected.delete(id);
+  S.spoSel = [...selected];
+  refresh();
+};
+A.spoSelectAll = (_, __, t) => {
+  const k = F.spo.kind,
+    visible = S.spoilage.filter((s) => !s.archived && (!k || (k === "Return" ? s.kind === "Supplier Return" : s.kind === k)));
+  S.spoSel = t.checked ? visible.map((s) => s.id) : [];
+  refresh();
+};
+A.spoUpdateSelected = () => {
+  if (!guard(isMgr())) return;
+  if ((S.spoSel || []).length !== 1) {
+    toast("Select exactly one record to update.", "err");
+    return;
+  }
+  const record = S.spoilage.find((s) => s.id === S.spoSel[0]);
+  if (!record) return;
+  const batch = record.batch
+    ? S.batches.find((b) => b.ref === record.batch)
+    : null;
+  const isAdjustment = record.kind === "Adjustment";
+  const availableBefore = isAdjustment
+    ? stockOf(record.pid) - record.qty
+    : batch
+      ? batch.qty + record.qty
+      : stockOf(record.pid) + record.qty;
+  const updateFields = isAdjustment
+    ? `${fld("su_r", "Reason", { val: record.reason })}${fld("su_n", "Notes", { type: "textarea", val: record.notes || "", req: false, col: "col-12" })}`
+    : `${fld("su_r", "Reason", { val: record.reason })}${fld("su_c", "Product condition", { val: record.cond, opts: [["", "Select condition"], ["Good — sealed", "Good — sealed"], ["Damaged", "Damaged"], ["Expired", "Expired"], ["Spoiled", "Spoiled"]] })}${fld("su_x", "Disposition", { val: record.disp, opts: [["", "Select"], ["Return to supplier", "Return to supplier"], ["Discard", "Discard"]] })}${fld("su_n", "Notes", { type: "textarea", val: record.notes || "", req: false, col: "col-12" })}`;
+  modal({
+    title: "Update Record",
+    ok: "Save Changes",
+    body: `<form class="row g-3" novalidate onsubmit="return false"><div class="col-12"><div class="alert alert-info mb-0">Total quantity before this record: <b id="suTotal">${availableBefore}</b> · Total quantity after: <b id="suAfter">${availableBefore + (isAdjustment ? record.qty : -record.qty)}</b></div></div>${fld("su_q", "Quantity", { type: "number", val: record.qty, hint: isAdjustment ? "Use a minus sign to reduce stock." : record.deliveryRef ? `Delivery ${record.deliveryRef}` : "Current record has no linked delivery reference." })}${updateFields}</form>`,
+    onShow: () => {
+      const update = () => {
+        const q = +val("su_q") || 0;
+        $("#suAfter").textContent = availableBefore + (isAdjustment ? q : -q);
+      };
+      $("#su_q").addEventListener("input", update);
+      update();
+    },
+    onOk: () => {
+      clearErr();
+      const q = +val("su_q");
+      const ok = [
+        check("su_q", Number.isInteger(q) && (isAdjustment ? q !== 0 : q > 0), isAdjustment ? "Enter a whole number that is not 0." : "Enter a whole number above 0."),
+        check("su_q", isAdjustment ? availableBefore + q >= 0 : q <= availableBefore, isAdjustment ? "The resulting quantity cannot be negative." : `Only ${availableBefore} available before this record.`),
+        check("su_r", val("su_r"), "Select or enter a reason."),
+        ...(isAdjustment ? [] : [
+          check("su_c", val("su_c"), "Select a condition."),
+          check("su_x", val("su_x"), "Select a disposition."),
+        ]),
+      ];
+      if (ok.includes(false)) return false;
+      if (isAdjustment) {
+        if (record.qty > 0) deduct(record.pid, record.qty);
+        else addBatch(record.pid, -record.qty, null, null);
+        if (q > 0) addBatch(record.pid, q, null, null);
+        else deduct(record.pid, -q);
+      } else if (batch) {
+        batch.qty += record.qty;
+        if (q > batch.qty) {
+          batch.qty -= record.qty;
+          return check("su_q", false, `Only ${batch.qty} available in batch.`);
+        }
+        batch.qty -= q;
+      }
+      if (q !== record.qty) logMove(record.pid, isAdjustment ? "Adjustment" : "Supplier Return", isAdjustment ? q - record.qty : record.qty - q, record.id, "Quantity correction");
+      Object.assign(record, {
+        qty: q,
+        reason: val("su_r"),
+        cond: isAdjustment ? "—" : val("su_c"),
+        disp: isAdjustment ? "—" : val("su_x"),
+        notes: val("su_n"),
+      });
+      logAudit("Stock", `Updated record ${record.id}`);
+      S.spoSel = [];
+      toast("Record updated.");
+      refresh();
+    },
+  });
+};
+A.spoArchiveSelected = () => {
+  if (!guard(isMgr())) return;
+  const records = (S.spoSel || [])
+    .map((id) => S.spoilage.find((s) => s.id === id))
+    .filter((s) => s && !s.archived);
+  if (!records.length) {
+    toast("Select at least one record to archive.", "err");
+    return;
+  }
+  confirmBox(
+    "Archive selected records?",
+    `${records.length} record${records.length === 1 ? "" : "s"} will be removed from the active list. Stock quantities will not change.`,
+    () => {
+      records.forEach((record) => {
+        record.archived = true;
+        logAudit("Stock", `Archived record ${record.id}`);
+      });
+      S.spoSel = [];
+      toast(`${records.length} record${records.length === 1 ? "" : "s"} archived.`);
+      refresh();
+    },
+    "Archive",
+    true,
+  );
+};
 V.spoilage = () =>
   pageHead(
-    "Spoilage and Returns",
-    "Record spoiled or returned products.",
-    `<button class="btn btn-primary" data-act="spoilForm" data-a="Spoilage"><i class="bi bi-plus-lg"></i> Record Spoilage</button><button class="btn btn-outline-primary" data-act="spoilForm" data-a="Return"><i class="bi bi-arrow-return-left"></i> Record Return</button>`,
+    "Adjustments & Returns",
+    "Record stock adjustments and return received goods to suppliers.",
+    `<button class="btn btn-primary" data-act="adjForm"><i class="bi bi-plus-slash-minus"></i> Record Adjustment</button><button class="btn btn-outline-primary" data-act="spoilForm" data-a="Return"><i class="bi bi-arrow-return-left"></i> Record Return</button>`,
   ) +
   toolbar([
     tbSelect(
       "spo.kind",
       [
-        ["", "Spoilage and returns"],
-        ["Spoilage", "Spoilage only"],
-        ["Return", "Returns only"],
+        ["", "Adjustments and returns"],
+        ["Adjustment", "Adjustments only"],
+        ["Return", "Supplier returns only"],
       ],
       "Record Type",
     ),
@@ -488,30 +749,43 @@ A.spoilForm = (kind, batchId) => {
   if (!guard(hasOp("spoilage"))) return;
   const b = batchId ? S.batches.find((x) => x.id == batchId) : null,
     R = kind === "Return",
-    reasons = R
-      ? [
-          "Wrong item",
-          "Damaged",
-          "Customer changed mind",
-          "Expired product sold",
-          "Other",
-        ]
-      : ["Expired", "Spoiled", "Damaged", "Other"];
-  const bo = (pid) =>
-    [["", "No specific batch"]].concat(
-      S.batches
-        .filter((x) => x.pid == pid && (R || x.qty > 0))
-        .map((x) => [
-          x.id,
-          `${x.ref} (${x.qty} left${x.exp ? ", exp " + dfmt(x.exp) : ""})`,
-        ]),
+    reasons = [
+      "Defective",
+      "Damaged",
+      "Spoiled",
+      "Expired",
+      "Incorrect item delivered",
+      "Incorrect quantity delivered",
+      "Other",
+    ];
+  const deliveryOptions = (pid) =>
+    [["", "Select delivery reference"]].concat(
+      S.deliveries
+        .filter((d) => d.lines.some((l) => l.pid == pid))
+        .map((d) => {
+          const line = d.lines.find((l) => l.pid == pid),
+            linked = S.batches.find(
+              (x) =>
+                x.deliveryRef === d.ref &&
+                x.pid == pid &&
+                x.qty > 0,
+            ),
+            fallback = S.batches.find(
+              (x) => x.pid == pid && x.arr === d.date && x.qty > 0,
+            ),
+            available = linked || fallback;
+          return [
+            d.ref,
+            `${d.ref} (${available ? available.qty : line.qty} available)`,
+          ];
+        }),
     );
   modal({
     title: "Record " + kind,
     size: "modal-lg",
     ok: "Save Record",
-    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("sp_p", "Product", { val: b ? b.pid : "", opts: [["", "Select product"]].concat(S.products.filter((p) => p.active).map((p) => [p.id, p.name])) })}${fld("sp_b", "Batch", { req: !R && false, val: b ? b.id : "", opts: bo(b ? b.pid : "") })}
- ${fld("sp_q", "Quantity", { type: "number", attrs: 'min="1"' })}${fld("sp_d", "Date", { type: "date", val: off(0) })}${fld("sp_r", "Reason", { opts: [["", "Select reason"]].concat(reasons.map((r) => [r, r])) })}${fld(
+    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("sp_p", "Product", { val: b ? b.pid : "", opts: [["", "Select product"]].concat(S.products.filter((p) => p.active).map((p) => [p.id, p.name])) })}        ${fld("sp_dref", "Delivery reference", { req: R, val: b ? (b.deliveryRef || "") : "", opts: deliveryOptions(b ? b.pid : "") })}
+    <div class="col-12"><div class="alert alert-info mb-0">Total available quantity: <b id="spTotal">0</b> · Quantity after deduction: <b id="spAfter">0</b></div></div>${fld("sp_q", "Quantity", { type: "number", attrs: 'min="1"' })}${fld("sp_d", "Date", { type: "date", val: off(0) })}${fld("sp_r", "Reason", { opts: [["", "Select reason"]].concat(reasons.map((r) => [r, r])) })}${fld(
    "sp_c",
    "Product condition",
    {
@@ -524,20 +798,60 @@ A.spoilForm = (kind, batchId) => {
      ],
    },
  )}
- ${R ? fld("sp_s", "Related sale", { opts: [["", "Select sale"]].concat(S.sales.map((s) => [s.ref, `${s.ref} — ${dfmt(s.dt)}`])) }) : ""}${fld("sp_x", "Disposition", { opts: [["", "Select"], ...(R ? ["Return to stock", "Discard", "Return to supplier"] : ["Discard", "Return to supplier"]).map((x) => [x, x])], hint: R ? "Only choose “Return to stock” if the item can be sold again." : "" })}</form>`,
-    onShow: () =>
+ ${R ? `<div class="col-12"><div class="alert alert-info mb-0">The selected delivery's original supplier and received product information are used for this return.</div></div>` : ""}${fld("sp_x", "Disposition", { opts: [["", "Select"], ["Return to supplier", "Return to supplier"]] })}${fld("sp_n", "Notes", { type: "textarea", req: false, col: "col-12" })}</form>`,
+    onShow: () => {
+      const update = () => {
+        const pid = +val("sp_p"),
+          delivery = val("sp_dref")
+            ? S.deliveries.find((d) => d.ref === val("sp_dref"))
+            : null,
+          bt = delivery
+            ? S.batches.find(
+                (x) =>
+                  x.deliveryRef === delivery.ref &&
+                  x.pid == pid &&
+                  x.qty > 0,
+              ) ||
+              S.batches.find(
+                (x) => x.pid == pid && x.arr === delivery.date && x.qty > 0,
+              )
+            : null,
+          total = bt ? bt.qty : stockOf(pid),
+          after = total - (+val("sp_q") || 0);
+        $("#spTotal").textContent = total;
+        $("#spAfter").textContent = after;
+      };
       $("#sp_p").addEventListener("change", (e) => {
-        $("#sp_b").innerHTML = bo(e.target.value)
+        $("#sp_dref").innerHTML = deliveryOptions(e.target.value)
           .map(([v, l]) => `<option value="${v}">${esc(l)}</option>`)
           .join("");
-      }),
+        update();
+      });
+      $("#sp_dref").addEventListener("change", update);
+      $("#sp_q").addEventListener("input", update);
+      update();
+    },
     onOk: () => {
       clearErr();
       const q = +val("sp_q"),
-        bt = val("sp_b") ? S.batches.find((x) => x.id == val("sp_b")) : null,
-        pid = +val("sp_p");
+        pid = +val("sp_p"),
+        delivery = val("sp_dref")
+          ? S.deliveries.find((d) => d.ref === val("sp_dref"))
+          : null,
+        bt = delivery
+          ? S.batches.find(
+              (x) =>
+                x.deliveryRef === delivery.ref &&
+                x.pid == pid &&
+                x.qty > 0,
+            ) ||
+            S.batches.find(
+              (x) => x.pid == pid && x.arr === delivery.date && x.qty > 0,
+            )
+          : null;
       const ok = [
         check("sp_p", pid, "Select a product."),
+        check("sp_dref", !R || (delivery && bt), "Select a delivery reference with available stock."),
         check(
           "sp_q",
           Number.isInteger(q) && q > 0,
@@ -545,47 +859,59 @@ A.spoilForm = (kind, batchId) => {
         ),
         check(
           "sp_q",
-          R || !pid || q <= (bt ? bt.qty : stockOf(pid)),
+          !pid || q <= (bt ? bt.qty : 0),
           `Only ${bt ? bt.qty : stockOf(pid)} available.`,
         ),
         check("sp_d", val("sp_d"), "Select a date."),
         check("sp_r", val("sp_r"), "Select a reason."),
+        check("sp_n", val("sp_r") !== "Other" || val("sp_n"), "Describe the return reason."),
         check("sp_c", val("sp_c"), "Select the condition."),
-        check("sp_x", val("sp_x"), "Select what happens to the item."),
+        check("sp_x", val("sp_x"), "Select the return disposition."),
       ];
-      if (R) ok.push(check("sp_s", val("sp_s"), "Select the related sale."));
       if (ok.includes(false)) return false;
       const id = "SP-" + String(S.n.spo++).padStart(4, "0"),
         disp = val("sp_x");
       S.spoilage.unshift({
         id,
         date: val("sp_d"),
-        kind,
+        kind: R ? "Supplier Return" : kind,
         pid,
         batch: bt ? bt.ref : "",
+        deliveryRef: delivery ? delivery.ref : "",
         qty: q,
         reason: val("sp_r"),
         cond: val("sp_c"),
-        saleRef: R ? val("sp_s") : "",
+        saleRef: "",
         disp,
+        notes: val("sp_n"),
+        supplier: bt ? bt.sup : "",
         user: S.user.name,
       });
-      if (!R) {
-        bt ? (bt.qty -= q) : deduct(pid, q);
-        logMove(pid, "Spoilage", -q, id, val("sp_r"));
-      } else if (disp === "Return to stock") {
-        bt ? (bt.qty += q) : addBatch(pid, q, null, null);
-        logMove(pid, "Return", q, val("sp_s"), "Returned to stock");
-      } else logMove(pid, "Return", 0, val("sp_s"), `Returned item — ${disp}`);
+      bt.qty -= q;
+      logMove(pid, "Supplier Return", -q, id, val("sp_r"));
       logAudit(
         "Stock",
-        `${kind} ${id}: ${prod(pid).name} ×${q} (${val("sp_r")}, ${disp})`,
+        `Supplier Return ${id}: ${prod(pid).name} ×${q} (${val("sp_r")})`,
       );
-      toast("Record saved. Stock updated (simulated).");
+      toast("Supplier return posted. Stock updated.");
+      setTimeout(() => printSupplierReturn(id), 0);
       refresh();
     },
   });
 };
+function printSupplierReturn(id) {
+  const r = S.spoilage.find((x) => x.id === id);
+  if (!r) return;
+  const p = prod(r.pid), b = S.batches.find((x) => x.ref === r.batch), supplier = supOf(r.supplier);
+  const area = $("#print-area");
+  area.innerHTML = `<div class="receipt"><div class="text-center"><b>STA. MONICA OF BUSTOS<br>MULTIPURPOSE COOPERATIVE</b><br>System-Generated Supplier Return Document<br><small>NOT AN OFFICIAL SUPPLIER RECEIPT OR TAX DOCUMENT</small></div><hr>Return reference: ${esc(r.id)}<br>Supplier: ${esc(supplier ? supplier.name : "—")}<br>Delivery reference: ${esc(r.deliveryRef || "—")}<br>Product: ${esc(p.code)} — ${esc(p.name)}<br>Quantity returned: ${r.qty}<br>Date: ${dfmt(r.date)}<br>Reason: ${esc(r.reason)}<br>Disposition: ${esc(r.disp)}<hr>Responsible user: ${esc(r.user)}</div>`;
+  document.body.classList.add("printing-receipt");
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("printing-receipt");
+    area.innerHTML = "";
+  }, { once: true });
+  setTimeout(() => window.print(), 300);
+}
 /* ---- Stock Movements ---- */
 const movTypes = ["Delivery", "Sale", "Spoilage", "Return", "Adjustment"];
 RES.mov = () => {
@@ -649,7 +975,18 @@ A.adjForm = () => {
   modal({
     title: "Record Adjustment",
     ok: "Save Adjustment",
-    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("aj_p", "Product", { col: "col-12", opts: [["", "Select product"]].concat(S.products.filter((p) => p.active).map((p) => [p.id, p.name])) })}${fld("aj_q", "Quantity change", { type: "number", hint: "Use a minus sign to reduce stock, e.g. -2" })}${fld("aj_r", "Reason", { type: "textarea", col: "col-12" })}</form>`,
+    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("aj_p", "Product", { col: "col-12", opts: [["", "Select product"]].concat(S.products.filter((p) => p.active).map((p) => [p.id, p.name])) })}<div class="col-12"><div class="alert alert-info mb-0">Current total quantity: <b id="ajTotal">0</b> · Total after adjustment: <b id="ajAfter">0</b></div></div>${fld("aj_q", "Quantity change", { type: "number", hint: "Use a minus sign to reduce stock, e.g. -2" })}${fld("aj_r", "Reason", { type: "textarea", col: "col-12" })}</form>`,
+    onShow: () => {
+      const update = () => {
+        const total = stockOf(+val("aj_p")),
+          change = +val("aj_q") || 0;
+        $("#ajTotal").textContent = total;
+        $("#ajAfter").textContent = total + change;
+      };
+      $("#aj_p").addEventListener("change", update);
+      $("#aj_q").addEventListener("input", update);
+      update();
+    },
     onOk: () => {
       clearErr();
       const pid = +val("aj_p"),
@@ -670,10 +1007,24 @@ A.adjForm = () => {
       ];
       if (ok.includes(false)) return false;
       q > 0 ? addBatch(pid, q, null, null) : deduct(pid, -q);
-      logMove(pid, "Adjustment", q, "", val("aj_r"));
+      const id = "AJ-" + String(S.n.spo++).padStart(4, "0");
+      S.spoilage.unshift({
+        id,
+        date: off(0),
+        kind: "Adjustment",
+        pid,
+        qty: q,
+        reason: val("aj_r"),
+        cond: "—",
+        saleRef: "",
+        disp: "—",
+        notes: "",
+        user: S.user.name,
+      });
+      logMove(pid, "Adjustment", q, id, val("aj_r"));
       logAudit(
         "Stock",
-        `Adjustment ${q > 0 ? "+" : ""}${q} ${prod(pid).name}: ${val("aj_r")}`,
+        `Adjustment ${id}: ${q > 0 ? "+" : ""}${q} ${prod(pid).name}: ${val("aj_r")}`,
       );
       toast("Adjustment saved (simulated).");
       refresh();

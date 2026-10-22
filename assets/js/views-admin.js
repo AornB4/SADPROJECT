@@ -7,21 +7,77 @@ RES.sup = () => {
         has(s.name + s.contact, f.q) &&
         (f.status === "all" || (f.status === "active") === s.active),
     );
+  S.supSel = (S.supSel || []).filter((id) => L.some((s) => s.id === id));
+  const selected = new Set(S.supSel),
+    allSelected = L.length > 0 && L.every((s) => selected.has(s.id)),
+    actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible suppliers" data-act="supSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-edit" data-act="supUpdateSelected" aria-label="Update selected supplier${S.supSel.length === 1 ? "" : "s"}" ${S.supSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="supArchiveSelected" aria-label="Archive selected suppliers" ${S.supSel.length ? "" : "disabled"}><i class="bi bi-archive"></i></button></span>`;
   return dataCard({
     title: "Supplier list",
     meta: `${L.length} supplier${L.length === 1 ? "" : "s"}`,
     body:
-      actionLegend(isMgr() ? ["view", "edit", "status"] : ["view"]) +
+      actionLegend(["edit", "archive"]) +
       tbl(
-        ["Supplier", "Contact person", "Phone", "Status", "Actions"],
+        ["Supplier", "Contact person", "Phone", "Status", actionHead],
         sl(L, "sup").map(
           (s) =>
-            `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact)}</td><td>${esc(s.phone)}</td><td>${activePill(s.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-view" data-act="supView" data-a="${s.id}" aria-label="View ${esc(s.name)}"><i class="bi bi-eye"></i></button>${isMgr() ? ` <button class="btn btn-sm table-action action-edit" data-act="supForm" data-a="${s.id}" aria-label="Edit ${esc(s.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="supToggle" data-a="${s.id}" aria-label="${s.active ? "Deactivate" : "Reactivate"} ${esc(s.name)}"><i class="bi bi-arrow-repeat"></i></button>` : ""}</td></tr>`,
+            `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.contact)}</td><td>${esc(s.phone)}</td><td>${activePill(s.active)}</td><td><input class="form-check-input" type="checkbox" aria-label="Select supplier ${esc(s.name)}" data-act="supSelect" data-a="${s.id}" ${selected.has(s.id) ? "checked" : ""}></td></tr>`,
         ),
         "No suppliers found.",
       ),
     foot: pager("sup", L.length),
   });
+};
+A.supSelect = (id, _, t) => {
+  const selected = new Set(S.supSel || []);
+  if (t.checked) selected.add(+id);
+  else selected.delete(+id);
+  S.supSel = [...selected];
+  refresh();
+};
+A.supSelectAll = (_, __, t) => {
+  const f = F.sup,
+    visible = S.suppliers.filter(
+      (s) =>
+        has(s.name + s.contact, f.q) &&
+        (f.status === "all" || (f.status === "active") === s.active),
+    );
+  S.supSel = t.checked ? visible.map((s) => s.id) : [];
+  refresh();
+};
+A.supUpdateSelected = () => {
+  if (!guard(isMgr())) return;
+  if ((S.supSel || []).length !== 1) {
+    toast("Select exactly one supplier to update.", "err");
+    return;
+  }
+  A.supForm(S.supSel[0]);
+};
+A.supArchiveSelected = () => {
+  if (!guard(isMgr())) return;
+  const suppliers = (S.supSel || [])
+    .map((id) => supOf(id))
+    .filter((s) => s);
+  const active = suppliers.filter((s) => s.active);
+  if (!active.length) {
+    toast("Select at least one active supplier to archive.", "err");
+    return;
+  }
+  confirmBox(
+    "Archive selected suppliers?",
+    `${active.length} supplier${active.length === 1 ? "" : "s"} will be hidden from new deliveries. Past records will be kept.`,
+    () => {
+      active.forEach((s) => {
+        s.active = false;
+        s.archived = true;
+        logAudit("Supplier", `Archived supplier ${s.name}`);
+      });
+      S.supSel = [];
+      toast(`${active.length} supplier${active.length === 1 ? "" : "s"} archived.`);
+      refresh();
+    },
+    "Archive",
+    true,
+  );
 };
 V.suppliers = () =>
   pageHead(
@@ -71,7 +127,7 @@ A.supForm = (id) => {
   modal({
     title: id ? "Edit Supplier" : "Add Supplier",
     ok: "Save Supplier",
-    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("sn1", "Supplier name", { val: s.name, col: "col-12" })}${fld("sc", "Contact person", { val: s.contact })}${fld("sph", "Phone number", { val: s.phone, attrs: 'inputmode="tel"' })}${fld("sa", "Address", { val: s.address, col: "col-12" })}</form>`,
+    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("sn1", "Supplier name", { val: s.name, col: "col-12" })}${fld("sc", "Contact person", { val: s.contact })}${fld("sph", "Phone number", { val: s.phone, attrs: 'inputmode="tel"' })}${fld("sa", "Address", { val: s.address, col: "col-12" })}${id ? fld("ss", "Status", { val: s.active ? "active" : "inactive", opts: [["active", "Active"], ["inactive", "Inactive"]], col: "col-12" }) : ""}</form>`,
     onOk: () => {
       clearErr();
       const ok = [
@@ -98,10 +154,12 @@ A.supForm = (id) => {
         contact: val("sc"),
         phone: val("sph"),
         address: val("sa"),
+        ...(id ? { active: val("ss") === "active" } : {}),
       };
       id
         ? Object.assign(s, d)
         : S.suppliers.push({ id: S.n.sup++, active: true, ...d });
+      if (id && !d.active) F.sup.status = "all";
       logAudit("Supplier", `${id ? "Edited" : "Added"} supplier ${d.name}`);
       toast("Supplier saved.");
       refresh();
@@ -135,21 +193,76 @@ RES.cat = () => {
         has(c.name, f.q) &&
         (f.status === "all" || (f.status === "active") === c.active),
     );
+  S.catSel = (S.catSel || []).filter((id) => L.some((c) => c.id === id));
+  const selected = new Set(S.catSel),
+    allSelected = L.length > 0 && L.every((c) => selected.has(c.id)),
+    actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible categories" data-act="catSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-edit" data-act="catUpdateSelected" aria-label="Update selected categor${S.catSel.length === 1 ? "y" : "ies"}" ${S.catSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="catArchiveSelected" aria-label="Archive selected categories" ${S.catSel.length ? "" : "disabled"}><i class="bi bi-archive"></i></button></span>`;
   return dataCard({
     title: "Category list",
     meta: `${L.length} categor${L.length === 1 ? "y" : "ies"}`,
     body:
-      actionLegend(["edit", "status"]) +
       tbl(
-        ["Category", "Products", "Status", "Actions"],
+        ["Category", "Classification", "Products", "Status", actionHead],
         sl(L, "cat").map(
           (c) =>
-            `<tr><td><b>${esc(c.name)}</b></td><td>${S.products.filter((p) => p.cat === c.id && p.active).length}</td><td>${activePill(c.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-edit" data-act="catForm" data-a="${c.id}" aria-label="Edit ${esc(c.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="catToggle" data-a="${c.id}" aria-label="${c.active ? "Deactivate" : "Reactivate"} ${esc(c.name)}"><i class="bi bi-arrow-repeat"></i></button></td></tr>`,
+            `<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.type || "Non-Perishable")}</td><td>${S.products.filter((p) => p.cat === c.id && p.active).length}</td><td>${activePill(c.active)}</td><td><input class="form-check-input" type="checkbox" aria-label="Select category ${esc(c.name)}" data-act="catSelect" data-a="${c.id}" ${selected.has(c.id) ? "checked" : ""}></td></tr>`,
         ),
         "No categories found.",
       ),
     foot: pager("cat", L.length),
   });
+};
+A.catSelect = (id, _, t) => {
+  const selected = new Set(S.catSel || []);
+  if (t.checked) selected.add(+id);
+  else selected.delete(+id);
+  S.catSel = [...selected];
+  refresh();
+};
+A.catSelectAll = (_, __, t) => {
+  const f = F.cat,
+    visible = S.cats.filter(
+      (c) =>
+        has(c.name, f.q) &&
+        (f.status === "all" || (f.status === "active") === c.active),
+    );
+  S.catSel = t.checked ? visible.map((c) => c.id) : [];
+  refresh();
+};
+A.catUpdateSelected = () => {
+  if (!guard(isMgr())) return;
+  if ((S.catSel || []).length !== 1) {
+    toast("Select exactly one category to update.", "err");
+    return;
+  }
+  A.catForm(S.catSel[0]);
+};
+A.catArchiveSelected = () => {
+  if (!guard(isMgr())) return;
+  const categories = (S.catSel || [])
+    .map((id) => catOf(id))
+    .filter((c) => c);
+  const active = categories.filter((c) => c.active);
+  if (!active.length) {
+    toast("Select at least one active category to archive.", "err");
+    return;
+  }
+  confirmBox(
+    "Archive selected categories?",
+    `${active.length} categor${active.length === 1 ? "y" : "ies"} will be hidden from new products. Existing products will keep their category.`,
+    () => {
+      active.forEach((c) => {
+        c.active = false;
+        c.archived = true;
+        logAudit("Category", `Archived category “${c.name}”`);
+      });
+      S.catSel = [];
+      toast(`${active.length} categor${active.length === 1 ? "y" : "ies"} archived.`);
+      refresh();
+    },
+    "Archive",
+    true,
+  );
 };
 V.categories = () =>
   pageHead(
@@ -172,16 +285,18 @@ V.categories = () =>
   `<div id="res">${RES.cat()}</div>`;
 A.catForm = (id) => {
   if (!guard(isMgr())) return;
-  const c = id ? catOf(id) : { name: "" };
+  const c = id ? catOf(id) : { name: "", type: "Non-Perishable" };
   modal({
     title: id ? "Edit Category" : "Add Category",
     size: "modal-sm",
-    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("cn", "Category name", { val: c.name, col: "col-12" })}</form>`,
+    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("cn", "Category name", { val: c.name, col: "col-12" })}${fld("ct", "Product classification", { val: c.type, opts: [["", "Select classification"], ["Perishable", "Perishable"], ["Non-Perishable", "Non-Perishable"]], col: "col-12" })}${id ? fld("cs", "Status", { val: c.active ? "active" : "inactive", opts: [["active", "Active"], ["inactive", "Inactive"]], col: "col-12" }) : ""}</form>`,
     onOk: () => {
       clearErr();
-      const n = val("cn");
+      const n = val("cn"),
+        type = val("ct");
       if (
         !check("cn", n, "Enter a category name.") ||
+        !check("ct", type, "Select a product classification.") ||
         !check(
           "cn",
           !S.cats.some(
@@ -191,11 +306,17 @@ A.catForm = (id) => {
         )
       )
         return false;
+      const affected = S.products.filter((p) => p.cat === c.id && p.active);
+      if (id && c.type !== type && affected.length)
+        return toast("Cannot change classification while products use this category. Update those products first.", "err");
       logAudit(
         "Category",
         id ? `Renamed category “${c.name}” to “${n}”` : `Added category “${n}”`,
       );
-      id ? (c.name = n) : S.cats.push({ id: S.n.cat++, name: n, active: true });
+      id
+        ? Object.assign(c, { name: n, type, active: val("cs") === "active" })
+        : S.cats.push({ id: S.n.cat++, name: n, type, active: true });
+      if (id && !c.active) F.cat.status = "all";
       toast(
         id
           ? "Category updated."
@@ -228,6 +349,49 @@ A.catToggle = (id) => {
   );
 };
 /* ---- Settings & Account ---- */
+const archivedRecords = (selectedType = S.archiveType || "all") => {
+  const type = selectedType,
+    records = [];
+  if (type === "all" || type === "products")
+    S.products.filter((p) => p.archived).forEach((p) =>
+      records.push({ type: "products", label: "Product", id: p.id, name: p.name, record: p }),
+    );
+  if (type === "all" || type === "categories")
+    S.cats.filter((c) => c.archived).forEach((c) =>
+      records.push({ type: "categories", label: "Category", id: c.id, name: c.name, record: c }),
+    );
+  if (type === "all" || type === "suppliers")
+    S.suppliers.filter((s) => s.archived).forEach((s) =>
+      records.push({ type: "suppliers", label: "Supplier", id: s.id, name: s.name, record: s }),
+    );
+  if (type === "adjustments")
+    S.spoilage.filter((s) => s.archived).forEach((s) =>
+      records.push({ type: "adjustments", label: "Adjustment / Return", id: s.id, name: `${s.id} — ${prod(s.pid).name}`, record: s }),
+    );
+  return records;
+};
+const archiveTable = (selectedType = S.archiveType || "all") => {
+  const records = archivedRecords(selectedType);
+  S.archiveSel = (S.archiveSel || []).filter((key) =>
+    records.some((r) => `${r.type}:${r.id}` === key),
+  );
+  const selected = new Set(S.archiveSel),
+    allSelected = records.length > 0 && records.every((r) => selected.has(`${r.type}:${r.id}`)),
+    actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all archived records" data-act="archiveSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-status" data-act="archiveRestoreSelected" aria-label="Restore selected records" ${S.archiveSel.length ? "" : "disabled"}><i class="bi bi-arrow-counterclockwise"></i></button></span>`;
+  return tbl(
+    ["Type", "Record", "Details", actionHead],
+    records.map((r) => {
+      const key = `${r.type}:${r.id}`;
+      return `<tr><td>${r.label}</td><td><b>${esc(r.name)}</b></td><td>${r.type === "adjustments" ? esc(r.record.reason || "—") : "Archived record"}</td><td><input class="form-check-input" type="checkbox" aria-label="Select archived ${esc(r.name)}" data-act="archiveSelect" data-a="${esc(key)}" ${selected.has(key) ? "checked" : ""}></td></tr>`;
+    }),
+    "No archived records found.",
+  );
+};
+V.archives = () =>
+  pageHead("Archives", "View and restore archived products, categories, suppliers, and adjustment records.") +
+  simNote("Archived records are hidden from active lists but remain available here for restoration.") +
+  `<section class="toolbar" aria-label="Archive filters"><div class="toolbar-grid"><div class="tb-field"><span class="tb-label">Record type</span><select class="form-select" id="archiveType" data-archive-filter onchange="S.archiveType=this.value;S.archiveSel=[];document.getElementById('archiveRes').innerHTML=archiveTable(this.value)"><option value="all" ${S.archiveType === "all" ? "selected" : ""}>All archived records</option><option value="products" ${S.archiveType === "products" ? "selected" : ""}>Products</option><option value="categories" ${S.archiveType === "categories" ? "selected" : ""}>Categories</option><option value="suppliers" ${S.archiveType === "suppliers" ? "selected" : ""}>Suppliers</option><option value="adjustments" ${S.archiveType === "adjustments" ? "selected" : ""}>Adjustments & Returns</option></select></div></div></section>` +
+  `<div id="archiveRes">${archiveTable()}</div>`;
 V.settings = () =>
   pageHead("Alert Settings", "Set when the system should warn you.") +
   simNote() +
@@ -239,6 +403,43 @@ V.settings = () =>
     body: `<form data-form="saveSettings" novalidate class="row g-3">${fld("se1", "Warn me about expiration this many days ahead", { type: "number", val: S.settings.expWarnDays, col: "col-12", attrs: 'min="1" max="365"', hint: "Used in the Dashboard and Stock Monitoring." })}${fld("se2", "Default minimum stock for new products", { type: "number", val: S.settings.defaultMin, col: "col-12", attrs: 'min="0"' })}<div class="col-12"><button class="btn btn-primary">Save Settings</button></div></form>`,
   }) +
   `</div>`;
+A.archiveSelect = (key, _, t) => {
+  const selected = new Set(S.archiveSel || []);
+  if (t.checked) selected.add(key);
+  else selected.delete(key);
+  S.archiveSel = [...selected];
+  $("#archiveRes").innerHTML = archiveTable(S.archiveType);
+};
+A.archiveSelectAll = (_, __, t) => {
+  const records = archivedRecords(S.archiveType);
+  S.archiveSel = t.checked ? records.map((r) => `${r.type}:${r.id}`) : [];
+  $("#archiveRes").innerHTML = archiveTable(S.archiveType);
+};
+A.archiveRestoreSelected = () => {
+  if (!guard(isMgr())) return;
+  const records = archivedRecords(S.archiveType).filter((r) =>
+    (S.archiveSel || []).includes(`${r.type}:${r.id}`),
+  );
+  if (!records.length) return toast("Select at least one archived record to restore.", "err");
+  confirmBox(
+    "Restore selected records?",
+    `${records.length} archived record${records.length === 1 ? "" : "s"} will be restored.`,
+    () => {
+      records.forEach((r) => {
+        if (r.type === "adjustments") r.record.archived = false;
+        else {
+          r.record.archived = false;
+          r.record.active = true;
+        }
+        logAudit("Archive", `Restored ${r.label.toLowerCase()} ${r.name}`);
+      });
+      S.archiveSel = [];
+      toast(`${records.length} record${records.length === 1 ? "" : "s"} restored.`);
+      refresh();
+    },
+    "Restore",
+  );
+};
 A.saveSettings = () => {
   if (!guard(isMgr())) return;
   clearErr();
@@ -329,21 +530,86 @@ RES.usr = () => {
         (!f.role || u.role === f.role) &&
         (f.status === "all" || (f.status === "active") === u.active),
     );
+  S.usrSel = (S.usrSel || []).filter((id) => L.some((u) => u.id === id));
+  const selected = new Set(S.usrSel),
+    allSelected = L.length > 0 && L.every((u) => selected.has(u.id)),
+    actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible users" data-act="usrSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-edit" data-act="usrUpdateSelected" aria-label="Update selected user${S.usrSel.length === 1 ? "" : "s"}" ${S.usrSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="usrStatusSelected" aria-label="Change status of selected users" ${S.usrSel.length ? "" : "disabled"}><i class="bi bi-arrow-repeat"></i></button></span>`;
   return dataCard({
     title: "User accounts",
     meta: `${L.length} account${L.length === 1 ? "" : "s"}`,
     body:
-      actionLegend(["edit", "status"]) +
       tbl(
-        ["Name", "Username", "Role", "Assigned operations", "Status", "Actions"],
+        ["Name", "Username", "Role", "Assigned operations", "Status", actionHead],
       sl(L, "usr").map(
         (u) =>
-          `<tr><td><b>${esc(u.name)}</b>${u.id === S.user.id ? ' <span class="small-muted">(you)</span>' : ""}</td><td>${esc(u.username)}</td><td>${ROLE_LABEL[u.role]}</td><td>${esc(opsText(u))}</td><td>${activePill(u.active)}</td><td class="text-nowrap"><button class="btn btn-sm table-action action-edit" data-act="usrForm" data-a="${u.id}" aria-label="Edit ${esc(u.name)}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-sm table-action action-status" data-act="usrToggle" data-a="${u.id}" aria-label="${u.active ? "Deactivate" : "Reactivate"} ${esc(u.name)}"><i class="bi bi-arrow-repeat"></i></button></td></tr>`,
+          `<tr><td><b>${esc(u.name)}</b>${u.id === S.user.id ? ' <span class="small-muted">(you)</span>' : ""}</td><td>${esc(u.username)}</td><td>${ROLE_LABEL[u.role]}</td><td>${esc(opsText(u))}</td><td>${activePill(u.active)}</td><td><input class="form-check-input" type="checkbox" aria-label="Select user ${esc(u.name)}" data-act="usrSelect" data-a="${u.id}" ${selected.has(u.id) ? "checked" : ""}></td></tr>`,
       ),
       "No users found.",
     ),
     foot: pager("usr", L.length),
   });
+};
+A.usrSelect = (id, _, t) => {
+  const selected = new Set(S.usrSel || []);
+  if (t.checked) selected.add(+id);
+  else selected.delete(+id);
+  S.usrSel = [...selected];
+  refresh();
+};
+A.usrSelectAll = (_, __, t) => {
+  const f = F.usr,
+    visible = S.users.filter(
+      (u) =>
+        has(u.name + u.username, f.q) &&
+        (!f.role || u.role === f.role) &&
+        (f.status === "all" || (f.status === "active") === u.active),
+    );
+  S.usrSel = t.checked ? visible.map((u) => u.id) : [];
+  refresh();
+};
+A.usrUpdateSelected = () => {
+  if (!guard(isMgr())) return;
+  if ((S.usrSel || []).length !== 1) {
+    toast("Select exactly one user to update.", "err");
+    return;
+  }
+  A.usrForm(S.usrSel[0]);
+};
+A.usrStatusSelected = () => {
+  if (!guard(isMgr())) return;
+  const users = (S.usrSel || [])
+    .map((id) => S.users.find((u) => u.id === id))
+    .filter((u) => u);
+  if (!users.length) return toast("Select at least one user.", "err");
+  if (users.some((u) => u.active && u.id === S.user.id))
+    return toast("You cannot deactivate your own account.", "err");
+  if (users.some((u) => u.active) && users.some((u) => !u.active))
+    return toast("Select users with the same current status.", "err");
+  const activeManagersAfter = S.users.filter(
+    (u) => u.active && !users.includes(u),
+  ).length + users.filter((u) => u.role === "Manager" && !u.active).length;
+  if (activeManagersAfter < 1)
+    return toast("At least one active Manager is required.", "err");
+  const changingToActive = users.every((u) => !u.active),
+    action = changingToActive ? "Reactivate" : "Deactivate";
+  confirmBox(
+    `${action} selected users?`,
+    `${users.length} account${users.length === 1 ? "" : "s"} will be ${changingToActive ? "reactivated" : "deactivated"}.`,
+    () => {
+      users.forEach((u) => {
+        u.active = !u.active;
+        logAudit(
+          "User",
+          `${u.active ? "Reactivated" : "Deactivated"} account ${u.username}`,
+        );
+      });
+      S.usrSel = [];
+      toast("User status updated.");
+      refresh();
+    },
+    action,
+    !changingToActive,
+  );
 };
 V.users = () =>
   pageHead(

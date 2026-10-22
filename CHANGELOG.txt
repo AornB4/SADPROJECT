@@ -1,0 +1,13 @@
+CHANGELOG
+
+2026-10-23
+- Added category-level Perishable/Non-Perishable classification.
+- Product type is now derived from the selected category and rendered read-only.
+- Prevented category classification changes while active products still use the category.
+- Removed stock, batch, expiration, and movement details from Products.
+- Kept Stock Monitoring focused on current stock and expiration visibility.
+- Renamed the operational page to Adjustments & Returns and added the adjustment entry point.
+- Restricted the page header to Record Adjustment and Record Return.
+- Converted Record Return to a supplier-return flow that deducts the selected batch.
+- Added immediate printable receiving and supplier-return documents after posting.
+- Kept Stock Monitoring strictly read-only.

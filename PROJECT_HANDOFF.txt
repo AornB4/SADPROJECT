@@ -1,0 +1,43 @@
+PROJECT HANDOFF
+
+Project: Sta. Monica of Bustos Sales and Inventory Management System
+Architecture: Static HTML/Bootstrap frontend with hash routing and in-memory JavaScript state.
+Limitation: Data resets on reload; there is no secure backend or multi-user persistence.
+
+REVISION STATUS
+COMPLETED - Products no longer displays stock quantities, batches, or expiration details.
+COMPLETED - Stock Monitoring remains read-only without transaction buttons or selection controls.
+COMPLETED - Category classification fields were added and product type is derived from category.
+IN PROGRESS - Full selection-toolbar conversion across every historical table.
+COMPLETED - Adjustments & Returns header now exposes only Record Adjustment and Record Return.
+COMPLETED - Record Return is supplier-return-only and posts a negative movement.
+COMPLETED - Successful delivery and supplier-return posting opens a printable system document.
+NEEDS TESTING - Delivery, adjustment, return, spoilage, movement, and archive workflows.
+NEEDS TESTING - Browser interaction and responsive layout.
+
+FILES MODIFIED
+- assets/js/data.js: category classification metadata and transaction state.
+- assets/js/main.js: Adjustments & Returns label and category-to-product-type synchronization.
+- assets/js/views-admin.js: category classification form and validation.
+- assets/js/views-inventory.js: product master cleanup, read-only stock monitoring, and adjustments entry point.
+
+KNOWN LIMITATIONS
+- Existing delivery posting remains frontend-only and resets on reload.
+- Some table action toolbars and archive behavior still require full implementation.
+- No automated browser test suite is configured.
+
+TESTING
+- Node syntax checks passed for data.js, main.js, ui.js, views-inventory.js, and views-admin.js.
+- git diff --check passed.
+- Browser/manual workflow testing is outstanding.
+
+NEXT SESSION INSTRUCTIONS
+Read PROJECT_HANDOFF.txt first.
+Read CHANGELOG.txt and TEST_REPORT.txt.
+Inspect the current source files in the extracted project.
+Compare the actual code against the incomplete tasks recorded here.
+Continue from the first unfinished task without unnecessarily redoing completed work.
+Update the handoff file as progress continues.
+Run the applicable tests.
+Recreate the ZIP with all changes before finishing.
+Verify the current files rather than blindly trusting this handoff.
