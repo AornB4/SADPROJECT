@@ -955,9 +955,6 @@ V.movements = () =>
   pageHead(
     "Stock Movements",
     "History of stock coming in and going out.",
-    hasOp("spoilage")
-      ? `<button class="btn btn-primary" data-act="adjForm"><i class="bi bi-plus-slash-minus"></i> Record Adjustment</button>`
-      : "",
   ) +
   toolbar([
     tbDate("mov.from", "From date"),
