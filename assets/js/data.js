@@ -160,6 +160,10 @@ const S = {
       ops: [],
     },
   ],
+  pendingAccounts: [
+    { id: 1, name: "Leah Navarro", email: "leah.navarro@example.com", submittedAt: "2026-10-22 09:15", status: "Pending" },
+    { id: 2, name: "Paolo Garcia", email: "paolo.garcia@example.com", submittedAt: "2026-10-23 10:40", status: "Pending" },
+  ],
   audit: [],
   cart: [],
   notifRead: {},
@@ -171,6 +175,7 @@ const S = {
   supSel: [],
   catSel: [],
   usrSel: [],
+  approvalSel: [],
   archiveSel: [],
   archiveType: "all",
   n: {
@@ -182,6 +187,7 @@ const S = {
     del: 4,
     spo: 3,
     user: 4,
+    approval: 3,
     aud: 1,
   },
 };
@@ -479,8 +485,7 @@ const ROLE_LABEL = { Manager: "Administrator / Manager", Employee: "Employee" };
 const OPS = [
   ["products", "Add new products"],
   ["deliveries", "Record deliveries (stock in)"],
-  ["spoilage", "Record spoilage and returns"],
-  ["adjust", "Stock adjustments"],
+  ["spoilage", "Adjustments and returns"],
 ];
 const isMgr = () => !!S.user && S.user.role === "Manager";
 const hasOp = (op) =>
@@ -518,7 +523,7 @@ function renameUser(a, b) {
     [-5, "09:01", "Maria Santos", "Stock", "Adjustment +4 Cooking Oil 1L: Found unrecorded stock"],
     [-6, "08:08", "Juan Dela Cruz", "Delivery", "Saved delivery DR-0001 from Fresh Mart Supply: 1 item(s), ₱540.00"],
     [-7, "16:20", "Maria Santos", "User", "Created account areyes (Employee: sales only)"],
-    [-7, "16:18", "Maria Santos", "User", "Created account jdelacruz (Employee: Add new products, Record deliveries (stock in), Record spoilage and returns)"],
+    [-7, "16:18", "Maria Santos", "User", "Created account jdelacruz (Employee: Add new products, Record deliveries (stock in), Adjustments and returns)"],
     [-7, "16:00", "Maria Santos", "Login", "Logged in"],
   ];
   seed.forEach(([d, t, user, action, detail], i) =>

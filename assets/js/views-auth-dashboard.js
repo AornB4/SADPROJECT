@@ -25,20 +25,15 @@ A.createAccount = () => {
     modal({
       title: "Create Account",
       ok: "Send OTP",
-      body: `<form class="row g-3" novalidate onsubmit="return false">${fld("ca_n", "Full name")}${fld("ca_e", "Email address", { type: "email", attrs: 'autocomplete="email"', hint: "A mock verification code will be shown after submission." })}${fld("ca_u", "Username", { attrs: 'autocomplete="off"', hint: "Use 3 or more letters, numbers, dots or underscores." })}${pw("ca_p", "Password")}${pw("ca_c", "Confirm password")}<div class="col-12 small-muted">New accounts are created as Employee accounts. A Manager can later assign additional operations.</div></form>`,
+      body: `<form class="row g-3" novalidate onsubmit="return false">${fld("ca_n", "Full name")}${fld("ca_e", "Email address", { type: "email", attrs: 'autocomplete="email"', hint: "A mock verification code will be shown after submission." })}<div class="col-12 small-muted">After email verification, an administrator will review your request and set up your account access.</div></form>`,
       onOk: () => {
         clearErr();
         const name = val("ca_n"),
-          email = val("ca_e").trim().toLowerCase(),
-          username = val("ca_u").toLowerCase(),
-          password = $("#ca_p").value;
+          email = val("ca_e").trim().toLowerCase();
         const ok = [
           check("ca_n", name, "Enter your full name."),
           check("ca_e", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), "Enter a valid email address."),
-          check("ca_u", /^[a-z0-9._]{3,}$/.test(username), "Use 3+ letters, numbers, dots or underscores."),
-          check("ca_u", !S.users.some((u) => u.username === username), "This username is already used."),
-          check("ca_p", password.length >= 8 && /\d/.test(password), "Use 8+ characters with a number."),
-          check("ca_c", $("#ca_c").value === password, "Passwords do not match."),
+          check("ca_e", !S.pendingAccounts.some((a) => a.email === email && a.status === "Pending") && !S.users.some((u) => u.email === email), "This email already has an account request."),
         ];
         if (ok.includes(false)) return false;
         const otp = String(Math.floor(100000 + Math.random() * 900000));
@@ -49,18 +44,15 @@ A.createAccount = () => {
           onOk: () => {
             clearErr();
             if (!check("ca_otp", val("ca_otp") === otp, "Enter the correct OTP.")) return false;
-            S.users.push({
-              id: S.n.user++,
+            S.pendingAccounts.unshift({
+              id: S.n.approval++,
               name,
               email,
-              username,
-              role: "Employee",
-              active: true,
-              pw: password,
-              ops: [],
+              submittedAt: nowStamp(),
+              status: "Pending",
             });
-            logAudit("User", `Created account ${username} (Employee: Sales only)`, "—");
-            toast("Account verified and created. You can now log in.");
+            logAudit("Account", `Submitted account approval request for ${email}`, "—");
+            toast("Email verified. Your account request is awaiting admin approval.");
           },
         });
       },

@@ -18,6 +18,7 @@ const ROUTE_RULE = {
   archives: "mgr",
   settings: "mgr",
   users: "mgr",
+  approvals: "mgr",
   audit: "mgr",
 };
 const NAV = [
@@ -59,6 +60,7 @@ const NAV = [
         icon: "shield-check",
         kids: [
           ["users", "User Accounts"],
+          ["approvals", "Admin Approval"],
           ["audit", "Audit Logs"],
         ],
       },
@@ -87,6 +89,7 @@ const RK = {
   spoilage: "spo",
   reports: "rep",
   users: "usr",
+  approvals: "apr",
   audit: "aud",
   deliveries: "del",
 };
@@ -101,6 +104,7 @@ Object.assign(DEF, {
   spo: { kind: "" },
   rep: { type: "inventory", from: off(-30), to: off(0), cat: "", q: "" },
   usr: { q: "", role: "", status: "all" },
+  apr: { q: "" },
   aud: { from: "", to: "", user: "", type: "", q: "" },
   del: { q: "" },
 });

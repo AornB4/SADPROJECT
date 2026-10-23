@@ -11,11 +11,12 @@ RES.sup = () => {
   const selected = new Set(S.supSel),
     allSelected = L.length > 0 && L.every((s) => selected.has(s.id)),
     actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible suppliers" data-act="supSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-edit" data-act="supUpdateSelected" aria-label="Update selected supplier${S.supSel.length === 1 ? "" : "s"}" ${S.supSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="supArchiveSelected" aria-label="Archive selected suppliers" ${S.supSel.length ? "" : "disabled"}><i class="bi bi-archive"></i></button></span>`;
+  const supplierActions = `<div class="action-legend admin-action-legend" aria-label="Supplier actions"><span class="action-legend-title">Actions</span><span class="action-legend-item delivery-action-item"><i class="bi bi-plus-lg" aria-hidden="true"></i><b>Add Supplier</b><span class="delivery-action-purpose">Create a new supplier record.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-pencil-square action-edit" aria-hidden="true"></i><b>Update</b><span class="delivery-action-purpose">Modify a selected supplier's information.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-archive action-status" aria-hidden="true"></i><b>Archive</b><span class="delivery-action-purpose">Hide selected suppliers from new deliveries.</span></span></div>`;
   return dataCard({
     title: "Supplier list",
     meta: `${L.length} supplier${L.length === 1 ? "" : "s"}`,
     body:
-      actionLegend(["edit", "archive"]) +
+      supplierActions +
       tbl(
         ["Supplier", "Contact person", "Phone", "Status", actionHead],
         sl(L, "sup").map(
@@ -197,10 +198,12 @@ RES.cat = () => {
   const selected = new Set(S.catSel),
     allSelected = L.length > 0 && L.every((c) => selected.has(c.id)),
     actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible categories" data-act="catSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-edit" data-act="catUpdateSelected" aria-label="Update selected categor${S.catSel.length === 1 ? "y" : "ies"}" ${S.catSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="catArchiveSelected" aria-label="Archive selected categories" ${S.catSel.length ? "" : "disabled"}><i class="bi bi-archive"></i></button></span>`;
+  const categoryActions = `<div class="action-legend admin-action-legend" aria-label="Category actions"><span class="action-legend-title">Actions</span><span class="action-legend-item delivery-action-item"><i class="bi bi-plus-lg" aria-hidden="true"></i><b>Add Category</b><span class="delivery-action-purpose">Create a new product category.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-pencil-square action-edit" aria-hidden="true"></i><b>Update</b><span class="delivery-action-purpose">Modify a selected category's information.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-archive action-status" aria-hidden="true"></i><b>Archive</b><span class="delivery-action-purpose">Hide selected categories from active lists.</span></span></div>`;
   return dataCard({
     title: "Category list",
     meta: `${L.length} categor${L.length === 1 ? "y" : "ies"}`,
     body:
+      categoryActions +
       tbl(
         ["Category", "Classification", "Products", "Status", actionHead],
         sl(L, "cat").map(
@@ -378,7 +381,8 @@ const archiveTable = (selectedType = S.archiveType || "all") => {
   const selected = new Set(S.archiveSel),
     allSelected = records.length > 0 && records.every((r) => selected.has(`${r.type}:${r.id}`)),
     actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all archived records" data-act="archiveSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-status" data-act="archiveRestoreSelected" aria-label="Restore selected records" ${S.archiveSel.length ? "" : "disabled"}><i class="bi bi-arrow-counterclockwise"></i></button></span>`;
-  return tbl(
+  const archiveActions = `<div class="action-legend admin-action-legend" aria-label="Archive actions"><span class="action-legend-title">Actions</span><span class="action-legend-item delivery-action-item"><i class="bi bi-arrow-counterclockwise action-status" aria-hidden="true"></i><b>Restore</b><span class="delivery-action-purpose">Return selected archived records to their active lists.</span></span></div>`;
+  return archiveActions + tbl(
     ["Type", "Record", "Details", actionHead],
     records.map((r) => {
       const key = `${r.type}:${r.id}`;
@@ -522,6 +526,147 @@ const opsText = (u) =>
       : "Sales only";
 const mgrCount = () =>
   S.users.filter((u) => u.active && u.role === "Manager").length;
+const approvalUsername = (account) => {
+  const base = account.email.split("@")[0].replace(/[^a-z0-9._]/g, "").slice(0, 24) || "user";
+  let username = base,
+    n = 2;
+  while (S.users.some((u) => u.username === username)) username = `${base}${n++}`;
+  return username;
+};
+RES.apr = () => {
+  const f = F.apr,
+    L = S.pendingAccounts.filter(
+      (a) =>
+        a.status === "Pending" && has(a.name + a.email, f.q),
+    );
+  S.approvalSel = (S.approvalSel || []).filter((id) =>
+    L.some((a) => a.id === id && a.status === "Pending"),
+  );
+  const selected = new Set(S.approvalSel),
+    allSelected = L.length > 0 && L.every((a) => selected.has(a.id)),
+    hasPendingSelection = S.approvalSel.length > 0,
+    actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all pending account requests" data-act="approvalSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-edit" data-act="approvalApproveSelected" aria-label="Approve selected pending account requests" title="Approve selected pending requests" ${hasPendingSelection ? "" : "disabled"}><i class="bi bi-check2-circle"></i> Approve</button><button class="btn btn-sm table-action action-status" data-act="approvalRejectSelected" aria-label="Reject selected pending account requests" title="Reject selected pending requests" ${hasPendingSelection ? "" : "disabled"}><i class="bi bi-x-circle"></i> Reject</button></span>`,
+    approvalActions = `<div class="action-legend admin-action-legend" aria-label="Account approval actions"><span class="action-legend-title">Actions</span><span class="action-legend-item delivery-action-item"><i class="bi bi-check2-circle action-edit" aria-hidden="true"></i><b>Approve</b><span class="delivery-action-purpose">Create an active user account with administrator-defined access.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-x-circle action-status" aria-hidden="true"></i><b>Reject</b><span class="delivery-action-purpose">Decline the request and keep it out of active accounts.</span></span></div>`;
+  return dataCard({
+    title: "Account approval requests",
+    meta: `${L.length} request${L.length === 1 ? "" : "s"}`,
+    body:
+      approvalActions +
+      tbl(
+        ["Full name", "Email", "Submitted", actionHead],
+        sl(L, "apr").map(
+          (a) =>
+            `<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.email)}</td><td>${esc(a.submittedAt)}</td><td><input class="form-check-input" type="checkbox" aria-label="Select account request from ${esc(a.name)}" data-act="approvalSelect" data-a="${a.id}" ${selected.has(a.id) ? "checked" : ""}></td></tr>`,
+        ),
+        "No account approval requests found.",
+      ),
+    foot: pager("apr", L.length),
+  });
+};
+A.approvalSelect = (id, _, t) => {
+  const account = S.pendingAccounts.find((a) => a.id === +id);
+  if (!account || account.status !== "Pending") return;
+  const selected = new Set(S.approvalSel || []);
+  if (t.checked) selected.add(+id);
+  else selected.delete(+id);
+  S.approvalSel = [...selected];
+  refresh();
+};
+A.approvalSelectAll = (_, __, t) => {
+  const f = F.apr,
+    visible = S.pendingAccounts.filter(
+      (a) =>
+        a.status === "Pending" &&
+        has(a.name + a.email, f.q),
+    );
+  S.approvalSel = t.checked ? visible.map((a) => a.id) : [];
+  refresh();
+};
+A.approvalHistory = () => {
+  if (!guard(isMgr())) return;
+  const history = S.pendingAccounts.filter((a) => a.status !== "Pending");
+  modal({
+    title: "Account approval history",
+    size: "modal-lg approval-history-dialog",
+    body: history.length
+      ? `<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Full name</th><th>Email</th><th>Status</th><th>Submitted</th><th>Processed</th></tr></thead><tbody>${history.map((a) => `<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.email)}</td><td>${a.status === "Approved" ? pill("active", "check-circle", "Approved") : pill("off", "x-circle", "Rejected")}</td><td>${esc(a.submittedAt)}</td><td>${esc(a.approvedAt || a.rejectedAt || "—")}</td></tr>`).join("")}</tbody></table></div>`
+      : '<div class="empty"><span class="empty-icon"><i class="bi bi-clock-history"></i></span><b>No processed account requests yet.</b></div>',
+    noFooter: true,
+  });
+};
+A.approvalApproveSelected = () => {
+  if (!guard(isMgr())) return;
+  const accounts = (S.approvalSel || [])
+    .map((id) => S.pendingAccounts.find((a) => a.id === id))
+    .filter((a) => a && a.status === "Pending");
+  if (!accounts.length) return toast("Select at least one pending request.", "err");
+  modal({
+    title: "Approve account requests",
+    ok: "Approve Accounts",
+    body: `<form class="row g-3" novalidate onsubmit="return false">${fld("ap_role", "Account role", { opts: [["Employee", "Employee"], ["Manager", "Administrator / Manager"]] })}${pw("ap_pw", "Temporary password")} ${pw("ap_cp", "Confirm temporary password")}<div class="col-12 small-muted">${accounts.length} selected request${accounts.length === 1 ? "" : "s"} will be approved. Usernames are generated from each email address and can be changed later.</div></form>`,
+    onOk: () => {
+      clearErr();
+      const password = $("#ap_pw").value,
+        ok = [
+          check("ap_pw", password.length >= 8 && /\d/.test(password), "Use 8+ characters with a number."),
+          check("ap_cp", $("#ap_cp").value === password, "Passwords do not match."),
+        ];
+      if (ok.includes(false)) return false;
+      const role = val("ap_role");
+      accounts.forEach((a) => {
+        S.users.push({
+          id: S.n.user++,
+          name: a.name,
+          email: a.email,
+          username: approvalUsername(a),
+          role,
+          active: true,
+          pw: password,
+          ops: [],
+        });
+        a.status = "Approved";
+        a.approvedAt = nowStamp();
+        logAudit("User", `Approved account request for ${a.email}`, "—");
+      });
+      S.approvalSel = [];
+      toast(`${accounts.length} account${accounts.length === 1 ? "" : "s"} approved.`);
+      refresh();
+    },
+  });
+};
+A.approvalRejectSelected = () => {
+  if (!guard(isMgr())) return;
+  const accounts = (S.approvalSel || [])
+    .map((id) => S.pendingAccounts.find((a) => a.id === id))
+    .filter((a) => a && a.status === "Pending");
+  if (!accounts.length) return toast("Select at least one pending request.", "err");
+  confirmBox(
+    "Reject selected requests?",
+    `${accounts.length} account request${accounts.length === 1 ? "" : "s"} will be declined.`,
+    () => {
+      accounts.forEach((a) => {
+        a.status = "Rejected";
+        a.rejectedAt = nowStamp();
+        logAudit("Account", `Rejected account request for ${a.email}`, "—");
+      });
+      S.approvalSel = [];
+      toast(`${accounts.length} account request${accounts.length === 1 ? "" : "s"} rejected.`);
+      refresh();
+    },
+    "Reject",
+    true,
+  );
+};
+V.approvals = () =>
+  pageHead(
+    "Admin Approval",
+    "Review verified account requests before creating active user accounts.",
+    `<button class="btn btn-outline-primary" data-act="approvalHistory"><i class="bi bi-clock-history"></i> View History</button>`,
+  ) +
+  toolbar([
+    tbSearch("apr.q", "Search name or email"),
+  ]) +
+  `<div id="res">${RES.apr()}</div>`;
 RES.usr = () => {
   const f = F.usr,
     L = S.users.filter(
@@ -533,16 +678,18 @@ RES.usr = () => {
   S.usrSel = (S.usrSel || []).filter((id) => L.some((u) => u.id === id));
   const selected = new Set(S.usrSel),
     allSelected = L.length > 0 && L.every((u) => selected.has(u.id)),
-    actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible users" data-act="usrSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-edit" data-act="usrUpdateSelected" aria-label="Update selected user${S.usrSel.length === 1 ? "" : "s"}" ${S.usrSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="usrStatusSelected" aria-label="Change status of selected users" ${S.usrSel.length ? "" : "disabled"}><i class="bi bi-arrow-repeat"></i></button></span>`;
+    actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible users" data-act="usrSelectAll" ${allSelected ? "checked" : ""}><span>Actions</span><button class="btn btn-sm table-action action-edit" data-act="usrUpdateSelected" aria-label="Update selected user${S.usrSel.length === 1 ? "" : "s"}" ${S.usrSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button></span>`;
+  const userActions = `<div class="action-legend admin-action-legend" aria-label="User account actions"><span class="action-legend-title">Actions</span><span class="action-legend-item delivery-action-item"><i class="bi bi-plus-lg" aria-hidden="true"></i><b>Add User</b><span class="delivery-action-purpose">Create a new user account.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-pencil-square action-edit" aria-hidden="true"></i><b>Update</b><span class="delivery-action-purpose">Modify a selected user's role or permissions.</span></span></div>`;
   return dataCard({
     title: "User accounts",
     meta: `${L.length} account${L.length === 1 ? "" : "s"}`,
     body:
+      userActions +
       tbl(
-        ["Name", "Username", "Role", "Assigned operations", "Status", actionHead],
+        ["Name", "Username", "Role", "Assigned operations", actionHead],
       sl(L, "usr").map(
         (u) =>
-          `<tr><td><b>${esc(u.name)}</b>${u.id === S.user.id ? ' <span class="small-muted">(you)</span>' : ""}</td><td>${esc(u.username)}</td><td>${ROLE_LABEL[u.role]}</td><td>${esc(opsText(u))}</td><td>${activePill(u.active)}</td><td><input class="form-check-input" type="checkbox" aria-label="Select user ${esc(u.name)}" data-act="usrSelect" data-a="${u.id}" ${selected.has(u.id) ? "checked" : ""}></td></tr>`,
+          `<tr><td><b>${esc(u.name)}</b>${u.id === S.user.id ? ' <span class="small-muted">(you)</span>' : ""}</td><td>${esc(u.username)}</td><td>${ROLE_LABEL[u.role]}</td><td>${esc(opsText(u))}</td><td><input class="form-check-input" type="checkbox" aria-label="Select user ${esc(u.name)}" data-act="usrSelect" data-a="${u.id}" ${selected.has(u.id) ? "checked" : ""}></td></tr>`,
       ),
       "No users found.",
     ),
@@ -638,15 +785,6 @@ V.users = () =>
         ["Employee", "Employee"],
       ],
       "Role",
-    ),
-    tbSelect(
-      "usr.status",
-      [
-        ["active", "Active"],
-        ["inactive", "Inactive"],
-        ["all", "All"],
-      ],
-      "Status",
     ),
   ]) +
   `<div id="res">${RES.usr()}</div>`;

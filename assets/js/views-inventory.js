@@ -91,6 +91,7 @@ RES.prod = () => {
   const actionHead = m
     ? `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible products" data-act="prodSelectAll" ${allSelected ? "checked" : ""}><span>Action</span><button class="btn btn-sm table-action action-edit" data-act="prodUpdateSelected" aria-label="Update selected product${S.prodSel.length === 1 ? "" : "s"}" ${S.prodSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="prodArchiveSelected" aria-label="Archive selected products" ${S.prodSel.length ? "" : "disabled"}><i class="bi bi-archive"></i></button></span>`
     : "Action";
+  const productActions = `<div class="action-legend admin-action-legend" aria-label="Product actions"><span class="action-legend-title">Actions</span>${hasOp("products") ? '<span class="action-legend-item delivery-action-item"><i class="bi bi-plus-lg" aria-hidden="true"></i><b>Add Product</b><span class="delivery-action-purpose">Create a new product record.</span></span>' : ""}${m ? '<span class="action-legend-item delivery-action-item"><i class="bi bi-pencil-square action-edit" aria-hidden="true"></i><b>Update</b><span class="delivery-action-purpose">Modify selected product information.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-archive action-status" aria-hidden="true"></i><b>Archive</b><span class="delivery-action-purpose">Hide selected products from active lists.</span></span>' : ""}</div>`;
   const heads = ["Code", "Product", "Category", "Type"].concat(
     m ? ["Cost"] : [],
     ["Price", "Min. stock", actionHead],
@@ -99,7 +100,7 @@ RES.prod = () => {
     title: "Product list",
     meta: `${L.length} product${L.length === 1 ? "" : "s"}`,
     body:
-      actionLegend(["view", ...(m ? ["edit", "archive"] : [])]) +
+      productActions +
       tbl(
         heads,
         sl(L, "prod").map(
@@ -333,10 +334,12 @@ RES.del = () => {
   const selected = new Set(S.delSel),
     allSelected = L.length > 0 && L.every((d) => selected.has(d.ref));
   const actionHead = `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible deliveries" data-act="delSelectAll" ${allSelected ? "checked" : ""}><span>Action</span><button class="btn btn-sm table-action action-view" data-act="delViewSelected" aria-label="View selected deliver${S.delSel.length === 1 ? "y" : "ies"}" ${S.delSel.length ? "" : "disabled"}><i class="bi bi-eye"></i></button></span>`;
+  const deliveryActions = `<div class="action-legend delivery-action-legend" aria-label="Delivery actions"><span class="action-legend-title">Actions</span><span class="action-legend-item delivery-action-item"><i class="bi bi-plus-lg" aria-hidden="true"></i><b>New Delivery</b><span class="delivery-action-purpose">Record stock received from a supplier.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-eye action-view" aria-hidden="true"></i><b>View</b><span class="delivery-action-purpose">Open the details of selected delivery records.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-printer" aria-hidden="true"></i><b>Print receiving document</b><span class="delivery-action-purpose">Print the receiving document for a delivery.</span></span></div>`;
   return dataCard({
     title: "Delivery records",
     meta: `${L.length} ${L.length === 1 ? "delivery" : "deliveries"}`,
     body:
+      deliveryActions +
       tbl(
         ["Reference", "Supplier receipt", "Date", "Supplier", "Items", "Total cost", actionHead],
         sl(L, "del").map(
@@ -591,10 +594,11 @@ RES.spo = () => {
     actionHead = m
       ? `<span class="d-inline-flex align-items-center gap-2"><input class="form-check-input mt-0" type="checkbox" aria-label="Select all visible adjustment and return records" data-act="spoSelectAll" ${allSelected ? "checked" : ""}><span>Action</span><button class="btn btn-sm table-action action-edit" data-act="spoUpdateSelected" aria-label="Update selected record${S.spoSel.length === 1 ? "" : "s"}" ${S.spoSel.length === 1 ? "" : "disabled"}><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm table-action action-status" data-act="spoArchiveSelected" aria-label="Archive selected records" ${S.spoSel.length ? "" : "disabled"}><i class="bi bi-archive"></i></button></span>`
       : "Action";
+  const adjustmentActions = `<div class="action-legend adjustment-action-legend" aria-label="Adjustment and return actions"><span class="action-legend-title">Actions</span><span class="action-legend-item delivery-action-item"><i class="bi bi-plus-slash-minus" aria-hidden="true"></i><b>Record Adjustment</b><span class="delivery-action-purpose">Correct or update a product's stock quantity.</span></span><span class="action-legend-item delivery-action-item"><i class="bi bi-arrow-return-left" aria-hidden="true"></i><b>Record Return</b><span class="delivery-action-purpose">Record goods returned to a supplier.</span></span>${m ? '<span class="action-legend-item delivery-action-item"><i class="bi bi-pencil-square action-edit" aria-hidden="true"></i><b>Update</b><span class="delivery-action-purpose">Modify a selected adjustment or return record.</span><span class="action-legend-item delivery-action-item"><i class="bi bi-archive action-status" aria-hidden="true"></i><b>Archive</b><span class="delivery-action-purpose">Hide selected records from the active list.</span></span>' : ""}</div>`;
   return dataCard({
     title: "Spoilage and return records",
     meta: `${L.length} record${L.length === 1 ? "" : "s"}`,
-    body: tbl(
+    body: adjustmentActions + tbl(
       [
         "ID",
         "Date",
@@ -951,7 +955,7 @@ V.movements = () =>
   pageHead(
     "Stock Movements",
     "History of stock coming in and going out.",
-    hasOp("adjust")
+    hasOp("spoilage")
       ? `<button class="btn btn-primary" data-act="adjForm"><i class="bi bi-plus-slash-minus"></i> Record Adjustment</button>`
       : "",
   ) +
@@ -971,7 +975,7 @@ V.movements = () =>
   ]) +
   `<div id="res">${RES.mov()}</div>`;
 A.adjForm = () => {
-  if (!guard(hasOp("adjust"))) return;
+  if (!guard(hasOp("spoilage"))) return;
   modal({
     title: "Record Adjustment",
     ok: "Save Adjustment",

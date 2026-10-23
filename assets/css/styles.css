@@ -1314,6 +1314,12 @@ textarea.form-control {
   font-size: 0.9rem;
   color: var(--action-color);
 }
+.delivery-action-item {
+  white-space: normal;
+}
+.delivery-action-purpose {
+  font-weight: 400;
+}
 .table-action {
   color: var(--action-color);
   border-color: var(--action-color);
@@ -1888,6 +1894,18 @@ textarea.form-control {
 }
 .modal-dialog.modal-lg {
   max-width: 720px;
+}
+.modal-dialog.approval-history-dialog {
+  max-width: min(960px, calc(100vw - 2rem));
+}
+.approval-history-dialog .table {
+  table-layout: fixed;
+  width: 100%;
+}
+.approval-history-dialog .table th,
+.approval-history-dialog .table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .modal-header {
   padding: 0.85rem 1.1rem;
